@@ -456,6 +456,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             existing.setCurrentProjectName(incoming.getCurrentProjectName());
             existing.setCurrentProjectManager(incoming.getCurrentProjectManager());
             existing.setCurrentProjectStartDate(incoming.getCurrentProjectStartDate());
+            existing.setPositionLevel(incoming.getPositionLevel());
         }
     }
 

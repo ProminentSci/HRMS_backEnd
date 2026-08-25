@@ -28,6 +28,11 @@ public class JobDetails {
     private String currentProjectManager;
     private String currentProjectStartDate;
 
+    // "EMPLOYEE" (default), "TEAM_LEAD", or "PROJECT_MANAGER" - who this person is allowed to be
+    // assigned as when building a Project's PM/TL hierarchy. Independent of the "Bench"/"Project"
+    // workStatus above and of the legacy free-text reportingManager/currentProjectManager fields.
+    private String positionLevel;
+
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
     @JoinColumn(name = "emp_id")
@@ -160,5 +165,13 @@ public class JobDetails {
 
     public void setCurrentProjectStartDate(String currentProjectStartDate) {
         this.currentProjectStartDate = currentProjectStartDate;
+    }
+
+    public String getPositionLevel() {
+        return positionLevel;
+    }
+
+    public void setPositionLevel(String positionLevel) {
+        this.positionLevel = positionLevel;
     }
 }

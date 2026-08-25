@@ -4,11 +4,8 @@ import com.employee.management.backend.Entity.Employee;
 import com.employee.management.backend.Entity.PasswordResetToken;
 import com.employee.management.backend.repository.EmployeeRepository;
 import com.employee.management.backend.repository.PasswordResetTokenRepository;
-import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +19,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final EmployeeRepository employeeRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JavaMailSender mailSender;
+    private final EmailService emailService;
     private final String frontendUrl;
     private final String mailFrom;
     private final long expirationMinutes;
@@ -30,14 +27,14 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     public PasswordResetServiceImpl(EmployeeRepository employeeRepository,
                                      PasswordResetTokenRepository tokenRepository,
                                      PasswordEncoder passwordEncoder,
-                                     JavaMailSender mailSender,
+                                     EmailService emailService,
                                      @Value("${app.frontend-url}") String frontendUrl,
                                      @Value("${app.mail.from}") String mailFrom,
                                      @Value("${app.password-reset.expiration-minutes}") long expirationMinutes) {
         this.employeeRepository = employeeRepository;
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
-        this.mailSender = mailSender;
+        this.emailService = emailService;
         this.frontendUrl = frontendUrl;
         this.mailFrom = mailFrom;
         this.expirationMinutes = expirationMinutes;
@@ -92,18 +89,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
                 employee.getFirstName() == null ? "" : employee.getFirstName(),
                 employee.getLastName() == null ? "" : employee.getLastName()).trim();
 
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
-            helper.setTo(employee.getEmail());
-            helper.setFrom(mailFrom);
-            helper.setSubject("Reset your HRMS password");
-            helper.setText(buildEmailBody(name, resetLink), true);
-            mailSender.send(message);
-        } catch (Exception ex) {
-            throw new RuntimeException("Failed to send password reset email - " + ex.getClass().getSimpleName()
-                    + ": " + ex.getMessage(), ex);
-        }
+        emailService.sendHtmlEmail(employee.getEmail(), mailFrom, null,
+                "Reset your HRMS password", buildEmailBody(name, resetLink));
     }
 
     private String buildEmailBody(String name, String resetLink) {

@@ -13,13 +13,10 @@ import com.employee.management.backend.repository.LeaveBalanceRepository;
 import com.employee.management.backend.repository.LeaveHistoryRepository;
 import com.employee.management.backend.repository.LeaveRequestRepository;
 import com.employee.management.backend.repository.HolidayRepository;
-import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -36,7 +33,7 @@ public class LeaveRequestService {
     private final LeaveBalanceRepository leaveBalanceRepository;
     private final LeaveHistoryRepository leaveHistoryRepository;
     private final HolidayRepository holidayRepository;
-    private final JavaMailSender mailSender;
+    private final EmailService emailService;
     private final String mailFrom;
     private final String adminNotificationEmail;
     private final String adminLeaveDashboardUrl;
@@ -49,7 +46,7 @@ public class LeaveRequestService {
                                LeaveBalanceRepository leaveBalanceRepository,
                                LeaveHistoryRepository leaveHistoryRepository,
                                HolidayRepository holidayRepository,
-                               JavaMailSender mailSender,
+                               EmailService emailService,
                                @Value("${app.mail.from}") String mailFrom,
                                @Value("${app.admin.notification-email}") String adminNotificationEmail,
                                @Value("${app.frontend-url}") String frontendUrl,
@@ -59,7 +56,7 @@ public class LeaveRequestService {
         this.leaveBalanceRepository = leaveBalanceRepository;
         this.leaveHistoryRepository = leaveHistoryRepository;
         this.holidayRepository = holidayRepository;
-        this.mailSender = mailSender;
+        this.emailService = emailService;
         this.mailFrom = mailFrom;
         this.adminNotificationEmail = adminNotificationEmail;
         this.adminLeaveDashboardUrl = frontendUrl + adminLeaveDashboardPath;
@@ -134,21 +131,11 @@ public class LeaveRequestService {
                 employee.getFirstName() == null ? "" : employee.getFirstName(),
                 employee.getLastName() == null ? "" : employee.getLastName()).trim();
 
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
-            helper.setTo(adminNotificationEmail);
-            helper.setFrom(mailFrom);
-            if (employee.getEmail() != null && !employee.getEmail().trim().isEmpty()) {
-                helper.setReplyTo(employee.getEmail());
-            }
-            helper.setSubject("New Leave Request from " + employeeName);
-            helper.setText(buildAdminNotificationBody(employeeName, employee, leaveRequest), true);
-            mailSender.send(message);
-        } catch (Exception ex) {
-            System.out.println("Failed to send admin leave notification email - "
-                    + ex.getClass().getSimpleName() + ": " + ex.getMessage());
-        }
+        String replyTo = employee.getEmail() != null && !employee.getEmail().trim().isEmpty()
+                ? employee.getEmail() : null;
+        emailService.sendHtmlEmail(adminNotificationEmail, mailFrom, replyTo,
+                "New Leave Request from " + employeeName,
+                buildAdminNotificationBody(employeeName, employee, leaveRequest));
     }
 
     private String buildAdminNotificationBody(String employeeName, Employee employee, LeaveRequest leaveRequest) {
@@ -305,18 +292,9 @@ public class LeaveRequestService {
                 employee.getFirstName() == null ? "" : employee.getFirstName(),
                 employee.getLastName() == null ? "" : employee.getLastName()).trim();
 
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
-            helper.setTo(employee.getEmail());
-            helper.setFrom(mailFrom);
-            helper.setSubject("Your Leave Request has been " + newStatus);
-            helper.setText(buildEmployeeStatusBody(employeeName, leaveRequest, newStatus), true);
-            mailSender.send(message);
-        } catch (Exception ex) {
-            System.out.println("Failed to send leave status notification email - "
-                    + ex.getClass().getSimpleName() + ": " + ex.getMessage());
-        }
+        emailService.sendHtmlEmail(employee.getEmail(), mailFrom, null,
+                "Your Leave Request has been " + newStatus,
+                buildEmployeeStatusBody(employeeName, leaveRequest, newStatus));
     }
 
     private String buildEmployeeStatusBody(String employeeName, LeaveRequest leaveRequest, String newStatus) {

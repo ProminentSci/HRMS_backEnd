@@ -2,7 +2,9 @@ package com.employee.management.backend.controller;
 
 import com.employee.management.backend.Entity.Attendance;
 import com.employee.management.backend.Entity.Employee;
+import com.employee.management.backend.Entity.Holiday;
 import com.employee.management.backend.repository.AttendanceRepository;
+import com.employee.management.backend.repository.HolidayRepository;
 import com.employee.management.backend.service.EmployeeService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -32,10 +34,13 @@ public class AttendanceReportController {
 
     private final EmployeeService employeeService;
     private final AttendanceRepository attendanceRepository;
+    private final HolidayRepository holidayRepository;
 
-    public AttendanceReportController(EmployeeService employeeService, AttendanceRepository attendanceRepository) {
+    public AttendanceReportController(EmployeeService employeeService, AttendanceRepository attendanceRepository,
+                                       HolidayRepository holidayRepository) {
         this.employeeService = employeeService;
         this.attendanceRepository = attendanceRepository;
+        this.holidayRepository = holidayRepository;
     }
 
     @GetMapping
@@ -74,8 +79,10 @@ public class AttendanceReportController {
                             employee.getLastName() == null ? "" : employee.getLastName()).trim());
                     dto.setDepartment(employee.getJobDetails() != null ? employee.getJobDetails().getDepartment() : null);
                     dto.setMonth(monthLabel);
-                    dto.setPresentDays(presentDaysByEmployee.getOrDefault(employee.getEmpId(), 0L).intValue());
+                    int presentDays = presentDaysByEmployee.getOrDefault(employee.getEmpId(), 0L).intValue();
+                    dto.setPresentDays(presentDays);
                     dto.setWorkingDays(workingDays);
+                    dto.setAbsentDays(Math.max(0, workingDays - presentDays));
                     return dto;
                 })
                 .toList();
@@ -85,10 +92,22 @@ public class AttendanceReportController {
 
     private int calculateWorkingDays(int year, int month) {
         YearMonth yearMonth = YearMonth.of(year, month);
+        LocalDate firstDay = yearMonth.atDay(1);
+        LocalDate lastDay = yearMonth.atEndOfMonth();
+        LocalDate today = LocalDate.now();
+        LocalDate cappedLastDay = lastDay.isAfter(today) ? today : lastDay;
+        if (cappedLastDay.isBefore(firstDay)) {
+            return 0;
+        }
+
+        List<Holiday> holidays = holidayRepository.findByDateBetweenOrderByDateAsc(firstDay, cappedLastDay);
+        java.util.Set<LocalDate> holidayDates = holidays.stream().map(Holiday::getDate).collect(Collectors.toSet());
+
         int total = 0;
-        for (int day = 1; day <= yearMonth.lengthOfMonth(); day++) {
-            DayOfWeek dayOfWeek = yearMonth.atDay(day).getDayOfWeek();
-            if (dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY) {
+        for (LocalDate day = firstDay; !day.isAfter(cappedLastDay); day = day.plusDays(1)) {
+            DayOfWeek dayOfWeek = day.getDayOfWeek();
+            boolean isWeekend = dayOfWeek == DayOfWeek.SATURDAY || dayOfWeek == DayOfWeek.SUNDAY;
+            if (!isWeekend && !holidayDates.contains(day)) {
                 total++;
             }
         }
@@ -113,6 +132,7 @@ public class AttendanceReportController {
         private String month;
         private int presentDays;
         private int workingDays;
+        private int absentDays;
 
         public Long getEmpId() {
             return empId;
@@ -160,6 +180,14 @@ public class AttendanceReportController {
 
         public void setWorkingDays(int workingDays) {
             this.workingDays = workingDays;
+        }
+
+        public int getAbsentDays() {
+            return absentDays;
+        }
+
+        public void setAbsentDays(int absentDays) {
+            this.absentDays = absentDays;
         }
     }
 }

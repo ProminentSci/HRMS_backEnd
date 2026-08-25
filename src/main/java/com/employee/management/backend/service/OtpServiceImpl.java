@@ -3,11 +3,8 @@ package com.employee.management.backend.service;
 import com.employee.management.backend.Entity.Employee;
 import com.employee.management.backend.Entity.OtpVerification;
 import com.employee.management.backend.repository.OtpVerificationRepository;
-import jakarta.mail.internet.MimeMessage;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
@@ -20,17 +17,17 @@ public class OtpServiceImpl implements OtpService {
     private static final int MAX_ATTEMPTS = 5;
 
     private final OtpVerificationRepository otpVerificationRepository;
-    private final JavaMailSender mailSender;
+    private final EmailService emailService;
     private final String mailFrom;
     private final long expirationMinutes;
     private final SecureRandom random = new SecureRandom();
 
     public OtpServiceImpl(OtpVerificationRepository otpVerificationRepository,
-                           JavaMailSender mailSender,
+                           EmailService emailService,
                            @Value("${app.mail.from}") String mailFrom,
                            @Value("${app.otp.expiration-minutes}") long expirationMinutes) {
         this.otpVerificationRepository = otpVerificationRepository;
-        this.mailSender = mailSender;
+        this.emailService = emailService;
         this.mailFrom = mailFrom;
         this.expirationMinutes = expirationMinutes;
     }
@@ -82,21 +79,12 @@ public class OtpServiceImpl implements OtpService {
                 employee.getLastName() == null ? "" : employee.getLastName()).trim();
         String greeting = name.isEmpty() ? "Hello," : "Hello " + name + ",";
 
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
-            helper.setTo(employee.getEmail());
-            helper.setFrom(mailFrom);
-            helper.setSubject("Your HRMS verification code");
-            helper.setText("<p>" + greeting + "</p>"
-                    + "<p>Your verification code is:</p>"
-                    + "<p style=\"font-size:24px;font-weight:bold;letter-spacing:4px;\">" + code + "</p>"
-                    + "<p>This code expires in " + expirationMinutes + " minutes. If you didn't request this, "
-                    + "you can safely ignore this email.</p>", true);
-            mailSender.send(message);
-        } catch (Exception ex) {
-            throw new RuntimeException("Failed to send OTP email - " + ex.getClass().getSimpleName()
-                    + ": " + ex.getMessage(), ex);
-        }
+        String body = "<p>" + greeting + "</p>"
+                + "<p>Your verification code is:</p>"
+                + "<p style=\"font-size:24px;font-weight:bold;letter-spacing:4px;\">" + code + "</p>"
+                + "<p>This code expires in " + expirationMinutes + " minutes. If you didn't request this, "
+                + "you can safely ignore this email.</p>";
+
+        emailService.sendHtmlEmail(employee.getEmail(), mailFrom, null, "Your HRMS verification code", body);
     }
 }
