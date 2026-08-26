@@ -9,12 +9,14 @@ import org.springframework.stereotype.Repository;
 
 import com.employee.management.backend.Entity.LeaveRequest;
 
+import java.util.Collection;
 import java.util.List;
 
 @Repository
 public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long> {
     List<LeaveRequest> findByEmployeeEmpIdOrderByCreatedAtDesc(Long empId);
     List<LeaveRequest> findAllByOrderByCreatedAtDesc();
+    List<LeaveRequest> findByEmployeeEmpIdInOrderByCreatedAtDesc(Collection<Long> empIds);
 
     @Query("SELECT lr FROM LeaveRequest lr JOIN lr.employee e WHERE " +
             "(:status IS NULL OR :status = '' OR TRIM(LOWER(lr.status)) = TRIM(LOWER(:status))) AND " +

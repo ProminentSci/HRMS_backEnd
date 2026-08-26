@@ -18,6 +18,8 @@ C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\manageme
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\controller\AttendanceReportController.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\PasswordResetTokenRepository.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\UpdateLeaveRequestStatusDTO.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\TimesheetRepository.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\controller\TimesheetController.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\SalaryDetails.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\LeaveHistory.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\Project.java
@@ -31,16 +33,19 @@ C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\manageme
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\exception\DuplicateResourceException.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\PayrollRepository.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\CreateLeaveRequestDTO.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\Timesheet.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\ProjectMembershipRepository.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\controller\AttendanceController.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\LeaveRequest.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\config\AdminAccountSeeder.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\ProjectRepository.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\WeeklyReport.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\EducationDetailsRepository.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\UpdateHolidayDTO.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\Employee.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\LeaveBalance.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\service\EmployeeService.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\WeeklyReportRepository.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\LeaveBalanceRepository.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\controller\RelievingLetterController.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\EmergencyContact.java
@@ -80,6 +85,7 @@ C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\manageme
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\LeaveRequestDTO.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\EmployeeManagementApplication.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\HolidayRepository.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\controller\ManagerController.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\service\EmployeeServiceImpl.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\PayrollProcessRequestDTO.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\AttendanceRepository.java

@@ -39,7 +39,8 @@ public class LeaveRequestService {
     private final String adminLeaveDashboardUrl;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_DATE;
-    private static final DateTimeFormatter DISPLAY_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd MMM yyyy");
+    private static final 
+    DateTimeFormatter DISPLAY_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd MMM yyyy");
 
     public LeaveRequestService(LeaveRequestRepository leaveRequestRepository,
                                EmployeeRepository employeeRepository,
@@ -196,6 +197,14 @@ public class LeaveRequestService {
 
     public List<LeaveRequestDTO> getLeaveRequestsByEmployeeId(Long empId) {
         List<LeaveRequest> requests = leaveRequestRepository.findByEmployeeEmpIdOrderByCreatedAtDesc(empId);
+        return requests.stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    public List<LeaveRequestDTO> getLeaveRequestsForEmployees(java.util.Collection<Long> empIds) {
+        if (empIds == null || empIds.isEmpty()) {
+            return List.of();
+        }
+        List<LeaveRequest> requests = leaveRequestRepository.findByEmployeeEmpIdInOrderByCreatedAtDesc(empIds);
         return requests.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 

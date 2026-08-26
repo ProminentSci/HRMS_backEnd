@@ -19,6 +19,8 @@ public interface ProjectMembershipRepository extends JpaRepository<ProjectMember
 
     boolean existsByEmployeeEmpId(Long empId);
 
+    boolean existsByEmployeeEmpIdAndEndDateIsNull(Long empId);
+
     // "On bench" = no OPEN membership anywhere, AND not managing any still-active project either
     // (a project's PM has no ProjectMembership row of their own - they're tracked only via
     // Project.projectManager). A membership/PM slot on a since-completed project no longer
