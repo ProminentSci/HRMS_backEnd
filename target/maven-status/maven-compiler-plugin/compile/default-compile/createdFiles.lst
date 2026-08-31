@@ -11,7 +11,6 @@ com\employee\management\backend\exception\GlobalExceptionHandler.class
 com\employee\management\backend\repository\JobDetailsRepository.class
 com\employee\management\backend\controller\LeaveBalanceController$UpdateLeaveBalanceRequest.class
 com\employee\management\backend\exception\ResourceNotFoundException.class
-com\employee\management\backend\controller\AttendanceReportController.class
 com\employee\management\backend\controller\EmployeeController.class
 com\employee\management\backend\service\LeaveBalanceService.class
 com\employee\management\backend\Entity\LeaveBalance.class
@@ -34,7 +33,6 @@ com\employee\management\backend\service\HolidayService.class
 com\employee\management\backend\dto\HolidayDTO.class
 com\employee\management\backend\service\PayrollService.class
 com\employee\management\backend\service\EmployeeLetterService.class
-com\employee\management\backend\controller\ReportsController$ReportEmployeeDTO.class
 com\employee\management\backend\controller\EmployeeController$LoginResponse.class
 com\employee\management\backend\Entity\Holiday.class
 com\employee\management\backend\dto\PayrollEmployeeRequestDTO.class
@@ -52,7 +50,6 @@ com\employee\management\backend\service\EmployeeServiceImpl.class
 com\employee\management\backend\repository\SalaryDetailsRepository.class
 com\employee\management\backend\dto\PayrollProcessResponseDTO.class
 com\employee\management\backend\controller\EmployeeController$ForgotPasswordRequest.class
-com\employee\management\backend\controller\ReportsController.class
 com\employee\management\backend\repository\AddressDetailsRepository.class
 com\employee\management\backend\service\LeaveRequestService.class
 com\employee\management\backend\repository\LeaveBalanceRepository.class
@@ -84,4 +81,3 @@ com\employee\management\backend\security\JwtAuthenticationFilter.class
 com\employee\management\backend\Entity\LeaveRequest.class
 com\employee\management\backend\Entity\AddressDetails.class
 com\employee\management\backend\controller\LeaveRequestController$ErrorResponse.class
-com\employee\management\backend\controller\AttendanceReportController$AttendanceReportRowDTO.class

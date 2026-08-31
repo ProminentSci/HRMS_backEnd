@@ -1,8 +1,11 @@
 package com.employee.management.backend.controller;
 
+import com.employee.management.backend.Entity.Client;
 import com.employee.management.backend.Entity.Employee;
 import com.employee.management.backend.dto.DocumentFile;
+import com.employee.management.backend.repository.ClientRepository;
 import com.employee.management.backend.security.JwtUtil;
+import com.employee.management.backend.security.SecurityUtils;
 import com.employee.management.backend.service.EmployeeService;
 import com.employee.management.backend.service.OtpService;
 import com.employee.management.backend.service.PasswordResetService;
@@ -13,8 +16,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,14 +28,17 @@ public class EmployeeController {
     private final JwtUtil jwtUtil;
     private final PasswordResetService passwordResetService;
     private final OtpService otpService;
+    private final ClientRepository clientRepository;
 
     public EmployeeController(EmployeeService employeeService, PasswordEncoder passwordEncoder, JwtUtil jwtUtil,
-                               PasswordResetService passwordResetService, OtpService otpService) {
+                               PasswordResetService passwordResetService, OtpService otpService,
+                               ClientRepository clientRepository) {
         this.employeeService = employeeService;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.passwordResetService = passwordResetService;
         this.otpService = otpService;
+        this.clientRepository = clientRepository;
     }
 
     @GetMapping({"", "/getemployee"})
@@ -55,8 +59,10 @@ public class EmployeeController {
         String normalizedEmployeeType = normalizeFilterValue(employeeType);
         String normalizedJoinedFrom = normalizeFilterValue(joinedFrom);
         String normalizedJoinedTo = normalizeFilterValue(joinedTo);
+        Long clientId = SecurityUtils.currentClientId();
         if (normalizedSearch != null) {
             return employeeService.searchEmployees(
+                    clientId,
                     normalizedSearch,
                     normalizedDepartment,
                     normalizedStatus,
@@ -66,6 +72,7 @@ public class EmployeeController {
         }
         if (normalizedJoinedFrom != null || normalizedJoinedTo != null) {
             return employeeService.filterEmployeesByJoinDate(
+                    clientId,
                     normalizedDepartment,
                     normalizedStatus,
                     normalizedJoinedFrom,
@@ -73,7 +80,7 @@ public class EmployeeController {
                     PageRequest.of(normalizedPage, normalizedSize)
             );
         }
-        return employeeService.filterEmployees(normalizedDepartment, normalizedStatus, PageRequest.of(normalizedPage, normalizedSize));
+        return employeeService.filterEmployees(clientId, normalizedDepartment, normalizedStatus, PageRequest.of(normalizedPage, normalizedSize));
     }
 
     @GetMapping({"/report", "/reports"})
@@ -84,12 +91,29 @@ public class EmployeeController {
             @RequestParam(required = false) String status) {
         String normalizedDepartment = normalizeFilterValue(department);
         String normalizedStatus = normalizeFilterValue(status);
-        return employeeService.filterEmployees(normalizedDepartment, normalizedStatus, PageRequest.of(Math.max(page, 0), Math.max(size, 1)));
+        return employeeService.filterEmployees(SecurityUtils.currentClientId(), normalizedDepartment, normalizedStatus,
+                PageRequest.of(Math.max(page, 0), Math.max(size, 1)));
     }
 
     @GetMapping("/{empId}")
     public ResponseEntity<Employee> getEmployee(@PathVariable Long empId) {
-        return ResponseEntity.ok(employeeService.findById(empId));
+        Employee employee = employeeService.findById(empId);
+        if (!canAccess(employee)) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(employee);
+    }
+
+    // A caller may only read/modify an employee record belonging to their own tenant. A
+    // super_admin (clientId == null on their own token) is the platform operator, not scoped
+    // to any single tenant, so isn't granted blanket access to every employee here either -
+    // that's handled separately, through the dedicated Super Admin endpoints.
+    private boolean canAccess(Employee employee) {
+        Long callerClientId = SecurityUtils.currentClientId();
+        if (callerClientId == null || employee.getClient() == null) {
+            return false;
+        }
+        return callerClientId.equals(employee.getClient().getId());
     }
 
     private String normalizeFilterValue(String value) {
@@ -103,25 +127,28 @@ public class EmployeeController {
         return trimmed;
     }
 
+    // Public self-registration ("Register here" on the login screen) no longer exists: in a
+    // multi-tenant world, an anonymous signup has no company to belong to, and letting a request
+    // body pick its own client would be a direct cross-tenant hole. Every employee is now created
+    // by an authenticated admin and always inherits that admin's own client.
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<Employee> createEmployee(@RequestBody Employee employee) {
-        // Only an already-authenticated admin may set an arbitrary role (e.g. creating another
-        // admin). Anonymous/self-registration requests always become a plain employee, regardless
-        // of what role value the request body claims.
-        if (!isCurrentUserAdmin() || employee.getRole() == null || employee.getRole().trim().isEmpty()) {
+    public ResponseEntity<?> createEmployee(@RequestBody Employee employee) {
+        Long clientId = SecurityUtils.currentClientId();
+        Client client = clientId != null ? clientRepository.findById(clientId).orElse(null) : null;
+        if (client == null) {
+            return ResponseEntity.badRequest().body(new ApiResponse(false, "Your account isn't linked to a client"));
+        }
+
+        if (employee.getRole() == null || employee.getRole().trim().isEmpty()) {
             employee.setRole("employee");
         }
         if (employee.getPassword() != null && !employee.getPassword().isEmpty()) {
             employee.setPassword(passwordEncoder.encode(employee.getPassword()));
         }
+        employee.setClient(client);
         Employee saved = employeeService.createEmployee(employee);
         return ResponseEntity.ok(saved);
-    }
-
-    private boolean isCurrentUserAdmin() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication != null && authentication.isAuthenticated()
-                && authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 
     @PostMapping("/login")
@@ -141,6 +168,11 @@ public class EmployeeController {
 
             if (!isPasswordValid(storedPassword, providedPassword, employee.getEmpId())) {
                 return ResponseEntity.badRequest().body(new ApiResponse(false, "Invalid email or password"));
+            }
+
+            if (employee.getClient() != null && "Disabled".equalsIgnoreCase(employee.getClient().getStatus())) {
+                return ResponseEntity.status(403).body(new ApiResponse(false,
+                        "Your company's account has been disabled. Contact your administrator."));
             }
 
             try {
@@ -171,7 +203,8 @@ public class EmployeeController {
             otpService.verifyOtp(request.getUserId(), request.getOtp());
             Employee employee = employeeService.findById(request.getUserId());
             String name = String.format("%s %s", employee.getFirstName(), employee.getLastName()).trim();
-            String token = jwtUtil.generateToken(employee.getEmpId(), employee.getEmail(), employee.getRole());
+            Long clientId = employee.getClient() != null ? employee.getClient().getId() : null;
+            String token = jwtUtil.generateToken(employee.getEmpId(), employee.getEmail(), employee.getRole(), clientId);
             return ResponseEntity.ok(new LoginResponse(employee.getEmpId(), name, employee.getEmail(), employee.getRole(), token));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(new ApiResponse(false, ex.getMessage()));
@@ -217,6 +250,9 @@ public class EmployeeController {
 
     @PutMapping("/{empId}")
     public ResponseEntity<Employee> updateEmployee(@PathVariable Long empId, @RequestBody Employee employee) {
+        if (!canAccess(employeeService.findById(empId))) {
+            return ResponseEntity.notFound().build();
+        }
         Employee updated = employeeService.updateEmployee(empId, employee);
         return ResponseEntity.ok(updated);
     }
@@ -444,6 +480,9 @@ public class EmployeeController {
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{empId}")
     public ResponseEntity<Void> deleteEmployee(@PathVariable Long empId) {
+        if (!canAccess(employeeService.findById(empId))) {
+            return ResponseEntity.notFound().build();
+        }
         employeeService.deleteEmployee(empId);
         return ResponseEntity.noContent().build();
     }
@@ -453,6 +492,9 @@ public class EmployeeController {
             @PathVariable Long empId,
             @PathVariable String docType,
             @RequestParam("file") MultipartFile file) {
+        if (!canAccess(employeeService.findById(empId))) {
+            return ResponseEntity.notFound().build();
+        }
         employeeService.uploadEmployeeDocument(empId, docType, file);
         return ResponseEntity.ok().build();
     }
@@ -461,6 +503,9 @@ public class EmployeeController {
     public ResponseEntity<byte[]> downloadEmployeeDocument(
             @PathVariable Long empId,
             @PathVariable String docType) {
+        if (!canAccess(employeeService.findById(empId))) {
+            return ResponseEntity.notFound().build();
+        }
         DocumentFile documentFile = employeeService.getEmployeeDocument(empId, docType);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + documentFile.getFileName() + "\"")

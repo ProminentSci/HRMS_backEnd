@@ -35,6 +35,7 @@ public class DemoDataSeeder implements CommandLineRunner {
     private final ProjectRepository projectRepository;
     private final ProjectMembershipRepository membershipRepository;
     private final PasswordEncoder passwordEncoder;
+    private final DefaultClientProvider defaultClientProvider;
     private final boolean enabled;
 
     public DemoDataSeeder(EmployeeRepository employeeRepository,
@@ -42,12 +43,14 @@ public class DemoDataSeeder implements CommandLineRunner {
                            ProjectRepository projectRepository,
                            ProjectMembershipRepository membershipRepository,
                            PasswordEncoder passwordEncoder,
+                           DefaultClientProvider defaultClientProvider,
                            @Value("${app.demo-data.enabled:true}") boolean enabled) {
         this.employeeRepository = employeeRepository;
         this.employeeService = employeeService;
         this.projectRepository = projectRepository;
         this.membershipRepository = membershipRepository;
         this.passwordEncoder = passwordEncoder;
+        this.defaultClientProvider = defaultClientProvider;
         this.enabled = enabled;
     }
 
@@ -94,6 +97,7 @@ public class DemoDataSeeder implements CommandLineRunner {
         employee.setGender(d.gender);
         employee.setRole("employee");
         employee.setPassword(passwordEncoder.encode(DEMO_PASSWORD));
+        employee.setClient(defaultClientProvider.getOrCreate());
 
         JobDetails jobDetails = new JobDetails();
         jobDetails.setDepartment(d.department);

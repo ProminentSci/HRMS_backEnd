@@ -1,3 +1,4 @@
+
 package com.employee.management.backend.security;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -51,7 +52,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST,
                         "/api/employees/forgot-password", "/api/employee/forgot-password",
                         "/api/employees/reset-password", "/api/employee/reset-password").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/employees", "/api/employee").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/super-admin/login").permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().permitAll()

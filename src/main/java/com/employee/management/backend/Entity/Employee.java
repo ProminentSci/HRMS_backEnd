@@ -30,6 +30,14 @@ public class Employee {
     private String role;
     private String profilePhoto;
 
+    // Which tenant company this employee belongs to. Nullable at the DB level only so existing
+    // rows survive the migration to multi-tenancy (see DefaultClientSeeder); every employee
+    // created going forward always has one.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "client_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Client client;
+
     @OneToOne(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private AddressDetails addressDetails;
 
@@ -59,6 +67,14 @@ public class Employee {
 
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ProjectHistory> projectHistory = new ArrayList<>();
+
+    public Client getClient() {
+        return client;
+    }
+
+    public void setClient(Client client) {
+        this.client = client;
+    }
 
     public Long getEmpId() {
         return empId;

@@ -43,23 +43,23 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public Page<Employee> findAllEmployees(Pageable pageable) {
+    public Page<Employee> findAllEmployees(Long clientId, Pageable pageable) {
         if (pageable == null) {
             pageable = PageRequest.of(0, 10);
         }
         int pageSize = Math.max(pageable.getPageSize(), 1);
         int pageNumber = Math.max(pageable.getPageNumber(), 0);
         Pageable safePageable = PageRequest.of(pageNumber, pageSize, pageable.getSort());
-        return employeeRepository.findAll(safePageable);
+        return employeeRepository.findByClientId(clientId, safePageable);
     }
 
     @Override
-    public Page<Employee> searchEmployees(String search, Pageable pageable) {
-        return searchEmployees(search, null, null, null, pageable);
+    public Page<Employee> searchEmployees(Long clientId, String search, Pageable pageable) {
+        return searchEmployees(clientId, search, null, null, null, pageable);
     }
 
     @Override
-    public Page<Employee> searchEmployees(String search, String department, String status, String employeeType, Pageable pageable) {
+    public Page<Employee> searchEmployees(Long clientId, String search, String department, String status, String employeeType, Pageable pageable) {
         if (pageable == null) {
             pageable = PageRequest.of(0, 10);
         }
@@ -70,7 +70,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         String normalizedEmployeeType = employeeType == null ? "" : employeeType.trim();
 
         if (normalizedSearch.isEmpty() && normalizedDepartment.isEmpty() && normalizedStatus.isEmpty() && normalizedEmployeeType.isEmpty()) {
-            return findAllEmployees(PageRequest.of(Math.max(pageable.getPageNumber(), 0), Math.max(pageable.getPageSize(), 1), pageable.getSort()));
+            return findAllEmployees(clientId, PageRequest.of(Math.max(pageable.getPageNumber(), 0), Math.max(pageable.getPageSize(), 1), pageable.getSort()));
         }
 
         if (!normalizedSearch.isEmpty() && isNumeric(normalizedSearch)) {
@@ -80,18 +80,22 @@ public class EmployeeServiceImpl implements EmployeeService {
             final var sort = pageable.getSort();
             final PageRequest pageRequest = PageRequest.of(safePageNumber, safePageSize, sort);
             final PageRequest singleResultRequest = PageRequest.of(0, 1, sort);
+            // Matching by ID must still respect the tenant boundary - otherwise one client's
+            // admin could enumerate another client's employee IDs through the search box.
             return employeeRepository.findById(employeeId)
+                    .filter(employee -> employee.getClient() != null && clientId != null
+                            && clientId.equals(employee.getClient().getId()))
                     .map(employee -> new PageImpl<Employee>(List.of(employee), singleResultRequest, 1))
                     .orElseGet(() -> new PageImpl<Employee>(List.of(), pageRequest, 0));
         }
 
         String searchPattern = normalizedSearch.isEmpty() ? null : "%" + normalizedSearch.toLowerCase() + "%";
-        return employeeRepository.searchEmployees(searchPattern, normalizedDepartment, normalizedStatus, normalizedEmployeeType,
+        return employeeRepository.searchEmployees(clientId, searchPattern, normalizedDepartment, normalizedStatus, normalizedEmployeeType,
                 PageRequest.of(Math.max(pageable.getPageNumber(), 0), Math.max(pageable.getPageSize(), 1), pageable.getSort()));
     }
 
     @Override
-    public Page<Employee> filterEmployees(String department, String status, Pageable pageable) {
+    public Page<Employee> filterEmployees(Long clientId, String department, String status, Pageable pageable) {
         if (pageable == null) {
             pageable = PageRequest.of(0, 10);
         }
@@ -103,14 +107,14 @@ public class EmployeeServiceImpl implements EmployeeService {
         Pageable safePageable = PageRequest.of(pageNumber, pageSize, pageable.getSort());
 
         if (normalizedDepartment.isEmpty() && normalizedStatus.isEmpty()) {
-            return findAllEmployees(safePageable);
+            return findAllEmployees(clientId, safePageable);
         }
 
-        return employeeRepository.filterEmployees(normalizedDepartment, normalizedStatus, safePageable);
+        return employeeRepository.filterEmployees(clientId, normalizedDepartment, normalizedStatus, safePageable);
     }
 
     @Override
-    public Page<Employee> filterEmployeesByJoinDate(String department, String status, String fromDate, String toDate, Pageable pageable) {
+    public Page<Employee> filterEmployeesByJoinDate(Long clientId, String department, String status, String fromDate, String toDate, Pageable pageable) {
         if (pageable == null) {
             pageable = PageRequest.of(0, 10);
         }
@@ -124,7 +128,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         Pageable safePageable = PageRequest.of(pageNumber, pageSize, pageable.getSort());
 
         return employeeRepository.filterEmployeesByJoinDate(
-                normalizedDepartment, normalizedStatus, normalizedFromDate, normalizedToDate, safePageable);
+                clientId, normalizedDepartment, normalizedStatus, normalizedFromDate, normalizedToDate, safePageable);
     }
 
     private boolean isNumeric(String value) {

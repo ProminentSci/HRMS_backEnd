@@ -23,7 +23,7 @@ public class JwtUtil {
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(Long empId, String email, String role) {
+    public String generateToken(Long empId, String email, String role, Long clientId) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expirationMs);
 
@@ -31,6 +31,7 @@ public class JwtUtil {
                 .subject(email)
                 .claim("empId", empId)
                 .claim("role", role)
+                .claim("clientId", clientId)
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(signingKey)

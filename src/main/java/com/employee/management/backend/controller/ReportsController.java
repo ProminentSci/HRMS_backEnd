@@ -1,6 +1,7 @@
 package com.employee.management.backend.controller;
 
 import com.employee.management.backend.Entity.Employee;
+import com.employee.management.backend.security.SecurityUtils;
 import com.employee.management.backend.service.EmployeeService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -35,6 +36,7 @@ public class ReportsController {
         String normalizedStatus = normalizeFilterValue(status);
 
         Page<Employee> employees = employeeService.searchEmployees(
+                SecurityUtils.currentClientId(),
                 normalizedSearch,
                 normalizedDepartment,
                 normalizedStatus,

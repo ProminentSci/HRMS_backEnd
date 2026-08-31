@@ -7,15 +7,15 @@ import org.springframework.web.multipart.MultipartFile;
 import com.employee.management.backend.dto.DocumentFile;
 
 public interface EmployeeService {
-    Page<Employee> findAllEmployees(Pageable pageable);
+    Page<Employee> findAllEmployees(Long clientId, Pageable pageable);
 
-    Page<Employee> searchEmployees(String search, Pageable pageable);
+    Page<Employee> searchEmployees(Long clientId, String search, Pageable pageable);
 
-    Page<Employee> searchEmployees(String search, String department, String status, String employeeType, Pageable pageable);
+    Page<Employee> searchEmployees(Long clientId, String search, String department, String status, String employeeType, Pageable pageable);
 
-    Page<Employee> filterEmployees(String department, String status, Pageable pageable);
+    Page<Employee> filterEmployees(Long clientId, String department, String status, Pageable pageable);
 
-    Page<Employee> filterEmployeesByJoinDate(String department, String status, String fromDate, String toDate, Pageable pageable);
+    Page<Employee> filterEmployeesByJoinDate(Long clientId, String department, String status, String fromDate, String toDate, Pageable pageable);
 
     Employee findById(Long empId);
 

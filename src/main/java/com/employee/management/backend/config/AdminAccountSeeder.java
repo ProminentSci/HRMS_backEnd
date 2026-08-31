@@ -15,15 +15,18 @@ public class AdminAccountSeeder implements CommandLineRunner {
 
     private final EmployeeRepository employeeRepository;
     private final PasswordEncoder passwordEncoder;
+    private final DefaultClientProvider defaultClientProvider;
     private final String adminEmail;
     private final String adminPassword;
 
     public AdminAccountSeeder(EmployeeRepository employeeRepository,
                                PasswordEncoder passwordEncoder,
+                               DefaultClientProvider defaultClientProvider,
                                @Value("${app.admin.seed-email:admin@hrms.local}") String adminEmail,
                                @Value("${app.admin.seed-password:Admin@123}") String adminPassword) {
         this.employeeRepository = employeeRepository;
         this.passwordEncoder = passwordEncoder;
+        this.defaultClientProvider = defaultClientProvider;
         this.adminEmail = adminEmail;
         this.adminPassword = adminPassword;
     }
@@ -40,6 +43,7 @@ public class AdminAccountSeeder implements CommandLineRunner {
         admin.setEmail(adminEmail);
         admin.setRole("admin");
         admin.setPassword(passwordEncoder.encode(adminPassword));
+        admin.setClient(defaultClientProvider.getOrCreate());
         employeeRepository.save(admin);
 
         System.out.println("=================================================================");

@@ -5,6 +5,7 @@ import com.employee.management.backend.Entity.Employee;
 import com.employee.management.backend.Entity.Holiday;
 import com.employee.management.backend.repository.AttendanceRepository;
 import com.employee.management.backend.repository.HolidayRepository;
+import com.employee.management.backend.security.SecurityUtils;
 import com.employee.management.backend.service.EmployeeService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -58,7 +59,7 @@ public class AttendanceReportController {
         String normalizedStatus = normalizeFilterValue(status);
 
         Page<Employee> employeePage = employeeService.filterEmployees(
-                normalizedDepartment, normalizedStatus, PageRequest.of(normalizedPage, normalizedSize));
+                SecurityUtils.currentClientId(), normalizedDepartment, normalizedStatus, PageRequest.of(normalizedPage, normalizedSize));
 
         String monthPrefix = String.format("%04d-%02d", year, month);
         List<Attendance> monthAttendance = attendanceRepository.findByDateStartingWith(monthPrefix);
