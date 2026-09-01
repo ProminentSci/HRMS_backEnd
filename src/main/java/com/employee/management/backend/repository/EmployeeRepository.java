@@ -24,6 +24,10 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     Page<Employee> findByClientId(Long clientId, Pageable pageable);
 
+    // Resolves who should be emailed when an employee raises a ticket - every ADMIN-role
+    // employee on that employee's own client, never a global address.
+    List<Employee> findByClientIdAndRoleIgnoreCase(Long clientId, String role);
+
     // Used once, at startup, to migrate pre-multi-tenancy rows onto the default client.
     List<Employee> findByClientIsNull();
 
