@@ -10,6 +10,8 @@ import com.employee.management.backend.repository.EmployeeRepository;
 import com.employee.management.backend.repository.TicketRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -112,9 +114,10 @@ public class TicketService {
                 .stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    public List<TicketDTO> getTicketsForClient(Long clientId) {
-        return ticketRepository.findByEmployeeClientIdOrderByCreatedAtDesc(clientId)
-                .stream().map(this::convertToDTO).collect(Collectors.toList());
+    public Page<TicketDTO> getTicketsForClientPage(Long clientId, String status, Pageable pageable) {
+        String normalizedStatus = (status == null || status.isBlank() || "all".equalsIgnoreCase(status.trim()))
+                ? null : status.trim();
+        return ticketRepository.filterForClient(clientId, normalizedStatus, pageable).map(this::convertToDTO);
     }
 
     public TicketDTO updateTicketStatus(Long ticketId, Long adminClientId, UpdateTicketStatusDTO dto) {

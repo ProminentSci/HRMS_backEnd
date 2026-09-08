@@ -20,8 +20,10 @@ com\employee\management\backend\exception\GlobalExceptionHandler.class
 com\employee\management\backend\repository\JobDetailsRepository.class
 com\employee\management\backend\config\DemoDataSeeder$DemoEmployee.class
 com\employee\management\backend\Entity\SuperAdmin.class
+com\employee\management\backend\dto\PerformanceReportDTO.class
 com\employee\management\backend\controller\ManagerController.class
 com\employee\management\backend\service\TicketService.class
+com\employee\management\backend\Entity\PerformanceReport.class
 com\employee\management\backend\repository\TimesheetRepository.class
 com\employee\management\backend\controller\TicketController.class
 com\employee\management\backend\controller\LeaveBalanceController$UpdateLeaveBalanceRequest.class
@@ -51,6 +53,7 @@ com\employee\management\backend\controller\ExperienceLetterController.class
 com\employee\management\backend\controller\HolidayController.class
 com\employee\management\backend\controller\AttendanceController.class
 com\employee\management\backend\controller\PayrollController$PayslipModeUpdateRequest.class
+com\employee\management\backend\service\PerformanceReportService.class
 com\employee\management\backend\controller\EmployeeController$ResendOtpRequest.class
 com\employee\management\backend\repository\LeaveHistoryRepository.class
 com\employee\management\backend\repository\PasswordResetTokenRepository.class
@@ -68,6 +71,7 @@ com\employee\management\backend\service\EmployeeLetterService.class
 com\employee\management\backend\controller\ReportsController$ReportEmployeeDTO.class
 com\employee\management\backend\controller\EmployeeController$LoginResponse.class
 com\employee\management\backend\Entity\Holiday.class
+com\employee\management\backend\repository\PerformanceReportRepository.class
 com\employee\management\backend\controller\ManagerController$TeamMemberDTO.class
 com\employee\management\backend\dto\PayrollEmployeeRequestDTO.class
 com\employee\management\backend\repository\LeaveRequestRepository.class
@@ -85,6 +89,7 @@ com\employee\management\backend\Entity\Payroll.class
 com\employee\management\backend\security\SecurityConfig.class
 com\employee\management\backend\Entity\Employee.class
 com\employee\management\backend\service\EmployeeServiceImpl.class
+com\employee\management\backend\dto\SubmitPerformanceReportDTO.class
 com\employee\management\backend\repository\SalaryDetailsRepository.class
 com\employee\management\backend\dto\PayrollProcessResponseDTO.class
 com\employee\management\backend\config\SuperAdminSeeder.class
@@ -124,6 +129,7 @@ com\employee\management\backend\config\DefaultClientProvider.class
 com\employee\management\backend\controller\AttendanceController$AttendanceResponse.class
 com\employee\management\backend\dto\LeaveBalanceDTO.class
 com\employee\management\backend\Entity\Project.class
+com\employee\management\backend\controller\PerformanceReportController.class
 com\employee\management\backend\Entity\WeeklyReport.class
 com\employee\management\backend\EmployeeManagementApplication.class
 com\employee\management\backend\security\AuthenticatedUser.class

@@ -4,6 +4,7 @@ import com.employee.management.backend.dto.DocumentFile;
 import com.employee.management.backend.dto.PayrollProcessRequestDTO;
 import com.employee.management.backend.dto.PayrollProcessResponseDTO;
 import com.employee.management.backend.security.AuthenticatedUser;
+import com.employee.management.backend.security.SecurityUtils;
 import com.employee.management.backend.service.PayrollExcelService;
 import com.employee.management.backend.service.PayrollService;
 import org.springframework.http.HttpHeaders;
@@ -64,23 +65,59 @@ public class PayrollController {
             ResponseEntity<?> validationError = validateMonth(month);
             if (validationError != null) return validationError;
 
-            PayrollProcessResponseDTO response = payrollService.getProcessedPayrollByMonthAndYear(month, year);
+            PayrollProcessResponseDTO response = payrollService.getProcessedPayrollByMonthAndYear(
+                    SecurityUtils.currentClientId(), month, year);
             return buildExcelResponse(response);
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
         }
     }
 
-    @GetMapping({"", "/report", "/reports"})
-    public ResponseEntity<?> getPayrollReport(@RequestParam Integer month,
-                                              @RequestParam Integer year) {
-        return buildReportResponse(month, year);
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/processed-employees")
+    public ResponseEntity<?> getProcessedEmployeeIds(@RequestParam Integer month, @RequestParam Integer year) {
+        ResponseEntity<?> validationError = validateMonth(month);
+        if (validationError != null) return validationError;
+        return ResponseEntity.ok(payrollService.getProcessedEmployeeIds(SecurityUtils.currentClientId(), month, year));
     }
 
+    // The employee-facing Payslip page's own lookup - scoped to whoever the JWT says is
+    // calling, never a client-supplied employeeId, so one employee can never read another's
+    // payroll row. Deliberately not @PreAuthorize("hasRole('ADMIN')") - any authenticated
+    // employee may check their own payroll status.
+    @GetMapping("/my")
+    public ResponseEntity<?> getMyPayrollRecord(@RequestParam Integer month, @RequestParam Integer year) {
+        ResponseEntity<?> validationError = validateMonth(month);
+        if (validationError != null) return validationError;
+
+        AuthenticatedUser currentUser = SecurityUtils.currentUser();
+        if (currentUser == null || currentUser.empId() == null) {
+            return ResponseEntity.status(403).body(Map.of("error", "Not authenticated"));
+        }
+
+        return payrollService.getEmployeePayrollForMonth(currentUser.empId(), month, year)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    // Client-wide report - admin only. The employee-facing Payslip page uses /my instead,
+    // which is scoped to the caller's own record.
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping({"", "/report", "/reports"})
+    public ResponseEntity<?> getPayrollReport(@RequestParam Integer month,
+                                              @RequestParam Integer year,
+                                              @RequestParam(defaultValue = "0") int page,
+                                              @RequestParam(defaultValue = "15") int size,
+                                              @RequestParam(required = false) String status,
+                                              @RequestParam(required = false) String search) {
+        return buildReportResponse(month, year, page, size, status, search);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping({"/{year}/{month}", "/report/{year}/{month}"})
     public ResponseEntity<?> getPayrollReportByPath(@PathVariable Integer year,
                                                     @PathVariable Integer month) {
-        return buildReportResponse(month, year);
+        return buildReportResponse(month, year, 0, 15, null, null);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -208,12 +245,26 @@ public class PayrollController {
         }
     }
 
-    private ResponseEntity<?> buildReportResponse(Integer month, Integer year) {
+    private ResponseEntity<?> buildReportResponse(Integer month, Integer year, int page, int size,
+                                                   String status, String search) {
         try {
             ResponseEntity<?> validationError = validateMonth(month);
             if (validationError != null) return validationError;
 
-            PayrollProcessResponseDTO response = payrollService.getProcessedPayrollByMonthAndYear(month, year);
+            Long searchId = null;
+            String searchName = null;
+            if (search != null && !search.trim().isEmpty()) {
+                String trimmedSearch = search.trim();
+                if (trimmedSearch.matches("\\d+")) {
+                    searchId = Long.parseLong(trimmedSearch);
+                } else {
+                    searchName = trimmedSearch;
+                }
+            }
+
+            PayrollProcessResponseDTO response = payrollService.getProcessedPayrollReportPage(
+                    SecurityUtils.currentClientId(), month, year, status, searchId, searchName,
+                    Math.max(page, 0), Math.max(size, 1));
             return ResponseEntity.ok(response);
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));

@@ -5,6 +5,8 @@ import com.employee.management.backend.dto.TicketDTO;
 import com.employee.management.backend.dto.UpdateTicketStatusDTO;
 import com.employee.management.backend.security.AuthenticatedUser;
 import com.employee.management.backend.service.TicketService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -47,8 +49,13 @@ public class TicketController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public ResponseEntity<List<TicketDTO>> getClientTickets() {
-        return ResponseEntity.ok(ticketService.getTicketsForClient(currentUser().clientId()));
+    public ResponseEntity<Page<TicketDTO>> getClientTickets(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String status) {
+        Page<TicketDTO> result = ticketService.getTicketsForClientPage(
+                currentUser().clientId(), status, PageRequest.of(Math.max(page, 0), Math.max(size, 1)));
+        return ResponseEntity.ok(result);
     }
 
     @PreAuthorize("hasRole('ADMIN')")

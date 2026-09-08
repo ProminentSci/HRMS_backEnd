@@ -24,7 +24,9 @@ import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -73,13 +75,21 @@ public class PayrollService {
         return response;
     }
 
+    // Scoped to one client (the caller's own company) but otherwise unfiltered/unpaginated -
+    // used by the Excel export, which legitimately wants every matching row in one file.
     @Transactional(readOnly = true)
-    public PayrollProcessResponseDTO getProcessedPayrollByMonthAndYear(Integer month, Integer year) {
+    public PayrollProcessResponseDTO getProcessedPayrollByMonthAndYear(Long clientId, Integer month, Integer year) {
+        return getProcessedPayrollByMonthAndYear(clientId, month, year, null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public PayrollProcessResponseDTO getProcessedPayrollByMonthAndYear(Long clientId, Integer month, Integer year,
+                                                                        String status, Long searchId, String searchName) {
         PayrollProcessResponseDTO response = new PayrollProcessResponseDTO();
         response.setMonth(month);
         response.setYear(year);
 
-        List<Payroll> payrolls = payrollRepository.findByMonthAndYearOrderByEmployeeIdAsc(month, year);
+        List<Payroll> payrolls = payrollRepository.filterForClient(clientId, month, year, status, searchId, searchName);
         for (Payroll payroll : payrolls) {
             response.getEmployees().add(convertPayrollToResponse(payroll));
         }
@@ -94,6 +104,44 @@ public class PayrollService {
         response.setTotalNetSalary(round(response.getEmployees().stream()
                 .mapToDouble(employee -> valueOrZero(employee.getNetSalary()))
                 .sum()));
+        long creditedCount = payrolls.stream().filter(p -> isCredited(p.getCreditStatus())).count();
+        response.setCreditedCount((int) creditedCount);
+        response.setPendingCount(response.getEmployees().size() - (int) creditedCount);
+
+        return response;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> getProcessedEmployeeIds(Long clientId, Integer month, Integer year) {
+        return payrollRepository.findProcessedEmployeeIds(clientId, month, year);
+    }
+
+    // Backs the employee-facing Payslip page's own lookup - the caller's empId comes from the
+    // verified JWT (see PayrollController.getMyPayrollRecord), never a client-supplied id.
+    @Transactional(readOnly = true)
+    public Optional<PayrollEmployeeResponseDTO> getEmployeePayrollForMonth(Long empId, Integer month, Integer year) {
+        return payrollRepository.findByEmployeeIdAndMonthAndYear(empId, month, year)
+                .map(this::convertPayrollToResponse);
+    }
+
+    // Page-sliced on top of the full filtered result above - the aggregate totals/counts stay
+    // correct for the whole filtered set (they can't be computed by the DB since gross salary
+    // and leave deduction are derived from SalaryDetails/leave days, not stored columns), only
+    // the `employees` list itself is trimmed down to the requested page.
+    @Transactional(readOnly = true)
+    public PayrollProcessResponseDTO getProcessedPayrollReportPage(Long clientId, Integer month, Integer year,
+                                                                     String status, Long searchId, String searchName,
+                                                                     int page, int size) {
+        PayrollProcessResponseDTO response = getProcessedPayrollByMonthAndYear(
+                clientId, month, year, status, searchId, searchName);
+
+        List<PayrollEmployeeResponseDTO> allEmployees = response.getEmployees();
+        int fromIndex = Math.min(page * size, allEmployees.size());
+        int toIndex = Math.min(fromIndex + size, allEmployees.size());
+        response.setEmployees(new ArrayList<>(allEmployees.subList(fromIndex, toIndex)));
+        response.setPage(page);
+        response.setSize(size);
+        response.setTotalPages(Math.max(1, (int) Math.ceil(allEmployees.size() / (double) size)));
 
         return response;
     }
@@ -233,8 +281,11 @@ public class PayrollService {
         int paidLeaveDays = getApprovedLeaveDays(employee.getEmpId(), payrollMonth, false);
         double dailySalary = monthlyGrossSalary / payrollMonth.lengthOfMonth();
         double leaveDeduction = dailySalary * unpaidLeaveDays;
-        double netSalary = Math.max(0, monthlyGrossSalary - leaveDeduction);
-        Payroll payroll = savePayroll(employee, salaryDetails, payrollMonth, unpaidLeaveDays, round(netSalary));
+        // A one-off top-up entered by the admin for this run only - added after the LOP
+        // deduction, not prorated against attendance like the recurring salary components.
+        double variablePay = requestedEmployee.getVariablePay() != null ? requestedEmployee.getVariablePay() : 0;
+        double netSalary = Math.max(0, monthlyGrossSalary - leaveDeduction) + variablePay;
+        Payroll payroll = savePayroll(employee, salaryDetails, payrollMonth, unpaidLeaveDays, round(netSalary), round(variablePay));
 
         response.setStatus("PROCESSED");
         response.setMessage("Payroll processed successfully");
@@ -257,6 +308,7 @@ public class PayrollService {
         response.setPaidLeaveDays(paidLeaveDays);
         response.setUnpaidLeaveDays(unpaidLeaveDays);
         response.setLeaveDeduction(round(leaveDeduction));
+        response.setVariablePay(round(variablePay));
         response.setNetSalary(round(netSalary));
 
         return response;
@@ -266,7 +318,8 @@ public class PayrollService {
                                 SalaryDetails salaryDetails,
                                 YearMonth payrollMonth,
                                 int lop,
-                                double salary) {
+                                double salary,
+                                double variablePay) {
         Payroll payroll = payrollRepository
                 .findByEmployeeIdAndMonthAndYear(employee.getEmpId(), payrollMonth.getMonthValue(), payrollMonth.getYear())
                 .orElseGet(Payroll::new);
@@ -276,6 +329,7 @@ public class PayrollService {
         payroll.setDateOfJoining(employee.getJobDetails() == null ? null : employee.getJobDetails().getDateOfJoining());
         payroll.setLop(lop);
         payroll.setSalary(salary);
+        payroll.setVariablePay(variablePay);
         payroll.setPanNumber(salaryDetails.getPanNumber());
         payroll.setAccountNumber(salaryDetails.getAccountNumber());
         payroll.setIfsc(salaryDetails.getIfscCode());
@@ -302,6 +356,7 @@ public class PayrollService {
         response.setLop(payroll.getLop());
         response.setSalary(payroll.getSalary());
         response.setNetSalary(payroll.getSalary());
+        response.setVariablePay(payroll.getVariablePay());
         response.setPanNumber(payroll.getPanNumber());
         response.setAccountNumber(payroll.getAccountNumber());
         response.setIfsc(payroll.getIfsc());

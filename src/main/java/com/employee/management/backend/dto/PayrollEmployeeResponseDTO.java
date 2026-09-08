@@ -25,6 +25,7 @@ public class PayrollEmployeeResponseDTO {
     private Integer paidLeaveDays;
     private Integer unpaidLeaveDays;
     private Double leaveDeduction;
+    private Double variablePay;
     private Double netSalary;
     private Boolean manualPayslip;
     private Boolean hasPayslipFile;
@@ -222,6 +223,14 @@ public class PayrollEmployeeResponseDTO {
 
     public void setLeaveDeduction(Double leaveDeduction) {
         this.leaveDeduction = leaveDeduction;
+    }
+
+    public Double getVariablePay() {
+        return variablePay;
+    }
+
+    public void setVariablePay(Double variablePay) {
+        this.variablePay = variablePay;
     }
 
     public Double getNetSalary() {

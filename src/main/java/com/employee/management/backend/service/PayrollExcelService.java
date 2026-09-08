@@ -40,6 +40,7 @@ public class PayrollExcelService {
                     "Paid Leave Days",
                     "Unpaid Leave Days",
                     "Leave Deduction",
+                    "Variable Pay",
                     "Net Salary",
                     "PAN Number",
                     "Account No",
@@ -92,15 +93,16 @@ public class PayrollExcelService {
         writeInteger(row, 13, payroll.getPaidLeaveDays());
         writeInteger(row, 14, payroll.getUnpaidLeaveDays());
         writeDouble(row, 15, payroll.getLeaveDeduction());
-        writeDouble(row, 16, payroll.getNetSalary());
-        writeString(row, 17, payroll.getPanNumber());
-        writeString(row, 18, payroll.getAccountNumber());
-        writeString(row, 19, payroll.getIfsc());
-        writeString(row, 20, payroll.getUan());
-        writeString(row, 21, payroll.getPf());
-        writeString(row, 22, payroll.getCreditStatus());
-        writeInteger(row, 23, payroll.getMonth());
-        writeInteger(row, 24, payroll.getYear());
+        writeDouble(row, 16, payroll.getVariablePay());
+        writeDouble(row, 17, payroll.getNetSalary());
+        writeString(row, 18, payroll.getPanNumber());
+        writeString(row, 19, payroll.getAccountNumber());
+        writeString(row, 20, payroll.getIfsc());
+        writeString(row, 21, payroll.getUan());
+        writeString(row, 22, payroll.getPf());
+        writeString(row, 23, payroll.getCreditStatus());
+        writeInteger(row, 24, payroll.getMonth());
+        writeInteger(row, 25, payroll.getYear());
     }
 
     private CellStyle createHeaderStyle(Workbook workbook) {

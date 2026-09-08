@@ -7,6 +7,8 @@ import com.employee.management.backend.Entity.ProjectMembership;
 import com.employee.management.backend.Entity.Timesheet;
 import com.employee.management.backend.Entity.WeeklyReport;
 import com.employee.management.backend.dto.LeaveRequestDTO;
+import com.employee.management.backend.dto.PerformanceReportDTO;
+import com.employee.management.backend.dto.SubmitPerformanceReportDTO;
 import com.employee.management.backend.dto.UpdateLeaveRequestStatusDTO;
 import com.employee.management.backend.repository.AttendanceRepository;
 import com.employee.management.backend.repository.EmployeeRepository;
@@ -16,6 +18,7 @@ import com.employee.management.backend.repository.TimesheetRepository;
 import com.employee.management.backend.repository.WeeklyReportRepository;
 import com.employee.management.backend.security.AuthenticatedUser;
 import com.employee.management.backend.service.LeaveRequestService;
+import com.employee.management.backend.service.PerformanceReportService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -47,11 +50,13 @@ public class ManagerController {
     private final LeaveRequestService leaveRequestService;
     private final TimesheetRepository timesheetRepository;
     private final WeeklyReportRepository weeklyReportRepository;
+    private final PerformanceReportService performanceReportService;
 
     public ManagerController(EmployeeRepository employeeRepository, ProjectRepository projectRepository,
                               ProjectMembershipRepository membershipRepository,
                               AttendanceRepository attendanceRepository, LeaveRequestService leaveRequestService,
-                              TimesheetRepository timesheetRepository, WeeklyReportRepository weeklyReportRepository) {
+                              TimesheetRepository timesheetRepository, WeeklyReportRepository weeklyReportRepository,
+                              PerformanceReportService performanceReportService) {
         this.employeeRepository = employeeRepository;
         this.projectRepository = projectRepository;
         this.membershipRepository = membershipRepository;
@@ -59,6 +64,7 @@ public class ManagerController {
         this.leaveRequestService = leaveRequestService;
         this.timesheetRepository = timesheetRepository;
         this.weeklyReportRepository = weeklyReportRepository;
+        this.performanceReportService = performanceReportService;
     }
 
     // Cheap check the frontend uses to decide whether to even show "My Team" navigation - avoids
@@ -258,6 +264,36 @@ public class ManagerController {
                         timesheetRepository.findByWeeklyReportIdOrderByWorkDateAsc(report.getId())))
                 .toList();
         return ResponseEntity.ok(reports);
+    }
+
+    // A PM's monthly 1-5 rating + comments for one team member. Resubmitting for the same
+    // employee+month updates the existing report - see PerformanceReportService.submitReport.
+    @PostMapping("/performance-reports")
+    public ResponseEntity<?> submitPerformanceReport(@RequestBody SubmitPerformanceReportDTO dto) {
+        Employee manager = requireProjectManager();
+        if (manager == null) {
+            return ResponseEntity.status(403).body(Map.of("error", "Project Manager access required"));
+        }
+
+        Set<Long> teamIds = getManagedMembers(manager.getEmpId()).stream()
+                .map(Employee::getEmpId)
+                .collect(Collectors.toSet());
+
+        try {
+            PerformanceReportDTO saved = performanceReportService.submitReport(manager, teamIds, dto);
+            return ResponseEntity.ok(saved);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+        }
+    }
+
+    @GetMapping("/performance-reports")
+    public ResponseEntity<?> getMyPerformanceReports() {
+        Employee manager = requireProjectManager();
+        if (manager == null) {
+            return ResponseEntity.status(403).body(Map.of("error", "Project Manager access required"));
+        }
+        return ResponseEntity.ok(performanceReportService.getReportsForManager(manager.getEmpId()));
     }
 
     private WeeklyReportDTO toWeeklyReportDTO(WeeklyReport report, List<Timesheet> entries) {

@@ -27,6 +27,9 @@ public class Payroll {
     @Column(name = "salary")
     private Double salary;
 
+    @Column(name = "variable_pay")
+    private Double variablePay;
+
     @Column(name = "pan_number")
     private String panNumber;
 
@@ -114,6 +117,14 @@ public class Payroll {
 
     public void setSalary(Double salary) {
         this.salary = salary;
+    }
+
+    public Double getVariablePay() {
+        return variablePay;
+    }
+
+    public void setVariablePay(Double variablePay) {
+        this.variablePay = variablePay;
     }
 
     public String getPanNumber() {
