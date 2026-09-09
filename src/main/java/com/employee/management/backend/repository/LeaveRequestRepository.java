@@ -16,9 +16,11 @@ import java.util.List;
 public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long> {
     List<LeaveRequest> findByEmployeeEmpIdOrderByCreatedAtDesc(Long empId);
     List<LeaveRequest> findAllByOrderByCreatedAtDesc();
+    List<LeaveRequest> findAllByEmployeeClientIdOrderByCreatedAtDesc(Long clientId);
     List<LeaveRequest> findByEmployeeEmpIdInOrderByCreatedAtDesc(Collection<Long> empIds);
 
     @Query("SELECT lr FROM LeaveRequest lr JOIN lr.employee e WHERE " +
+            "e.client.id = :clientId AND " +
             "(:status IS NULL OR :status = '' OR TRIM(LOWER(lr.status)) = TRIM(LOWER(:status))) AND " +
             "(:searchId IS NULL OR e.empId = :searchId) AND " +
             "(:searchName IS NULL OR :searchName = '' OR " +
@@ -27,7 +29,8 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, Long
             "  (FUNCTION('YEAR', lr.fromDate) = :year AND FUNCTION('MONTH', lr.fromDate) = :month) OR " +
             "  (FUNCTION('YEAR', lr.toDate) = :year AND FUNCTION('MONTH', lr.toDate) = :month)) " +
             "ORDER BY lr.createdAt DESC")
-    Page<LeaveRequest> filterLeaveRequests(@Param("status") String status,
+    Page<LeaveRequest> filterLeaveRequests(@Param("clientId") Long clientId,
+                                            @Param("status") String status,
                                             @Param("searchId") Long searchId,
                                             @Param("searchName") String searchName,
                                             @Param("year") Integer year,

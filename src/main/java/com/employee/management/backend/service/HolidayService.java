@@ -25,34 +25,35 @@ public class HolidayService {
         this.holidayRepository = holidayRepository;
     }
 
-    public List<HolidayDTO> getHolidays(Integer year, LocalDate start, LocalDate end, Integer upcomingDays) {
+    public List<HolidayDTO> getHolidays(Long clientId, Integer year, LocalDate start, LocalDate end, Integer upcomingDays) {
         List<Holiday> holidays;
         if (upcomingDays != null && upcomingDays > 0) {
             LocalDate today = LocalDate.now();
-            holidays = holidayRepository.findByDateBetweenOrderByDateAsc(today, today.plusDays(upcomingDays));
+            holidays = holidayRepository.findByClientIdAndDateBetweenOrderByDateAsc(clientId, today, today.plusDays(upcomingDays));
         } else if (start != null && end != null) {
-            holidays = holidayRepository.findByDateBetweenOrderByDateAsc(start, end);
+            holidays = holidayRepository.findByClientIdAndDateBetweenOrderByDateAsc(clientId, start, end);
         } else if (year != null) {
-            holidays = holidayRepository.findByYear(year);
+            holidays = holidayRepository.findByYearAndClientId(year, clientId);
         } else {
-            holidays = holidayRepository.findAllByOrderByDateAsc();
+            holidays = holidayRepository.findAllByClientIdOrderByDateAsc(clientId);
         }
         return holidays.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
-    public List<Integer> getHolidayYears() {
-        return holidayRepository.findDistinctYears();
+    public List<Integer> getHolidayYears(Long clientId) {
+        return holidayRepository.findDistinctYearsByClientId(clientId);
     }
 
-    public HolidayDTO getHoliday(Long id) {
-        Holiday holiday = holidayRepository.findById(id)
+    public HolidayDTO getHoliday(Long id, Long clientId) {
+        Holiday holiday = holidayRepository.findByIdAndClientId(id, clientId)
                 .orElseThrow(() -> new ResourceNotFoundException("Holiday", "id", id));
         return convertToDto(holiday);
     }
 
-    public HolidayDTO createHoliday(CreateHolidayDTO request, String createdBy) {
-        ensureUniqueDateTitle(request.getDate(), request.getTitle(), null);
+    public HolidayDTO createHoliday(CreateHolidayDTO request, String createdBy, Long clientId) {
+        ensureUniqueDateTitle(request.getDate(), request.getTitle(), null, clientId);
         Holiday holiday = new Holiday();
+        holiday.setClientId(clientId);
         holiday.setDate(request.getDate());
         holiday.setTitle(request.getTitle().trim());
         holiday.setDescription(request.getDescription());
@@ -62,13 +63,13 @@ public class HolidayService {
         return convertToDto(saved);
     }
 
-    public HolidayDTO updateHoliday(Long id, UpdateHolidayDTO request, String updatedBy) {
-        Holiday holiday = holidayRepository.findById(id)
+    public HolidayDTO updateHoliday(Long id, UpdateHolidayDTO request, String updatedBy, Long clientId) {
+        Holiday holiday = holidayRepository.findByIdAndClientId(id, clientId)
                 .orElseThrow(() -> new ResourceNotFoundException("Holiday", "id", id));
 
         LocalDate date = request.getDate() != null ? request.getDate() : holiday.getDate();
         String title = request.getTitle() != null ? request.getTitle().trim() : holiday.getTitle();
-        ensureUniqueDateTitle(date, title, id);
+        ensureUniqueDateTitle(date, title, id, clientId);
 
         if (request.getDate() != null) {
             holiday.setDate(request.getDate());
@@ -86,14 +87,14 @@ public class HolidayService {
         return convertToDto(saved);
     }
 
-    public void deleteHoliday(Long id) {
-        Holiday holiday = holidayRepository.findById(id)
+    public void deleteHoliday(Long id, Long clientId) {
+        Holiday holiday = holidayRepository.findByIdAndClientId(id, clientId)
                 .orElseThrow(() -> new ResourceNotFoundException("Holiday", "id", id));
         holidayRepository.delete(holiday);
     }
 
-    private void ensureUniqueDateTitle(LocalDate date, String title, Long currentId) {
-        holidayRepository.findByDateAndTitle(date, title).ifPresent(existing -> {
+    private void ensureUniqueDateTitle(LocalDate date, String title, Long currentId, Long clientId) {
+        holidayRepository.findByDateAndTitleAndClientId(date, title, clientId).ifPresent(existing -> {
             if (currentId == null || !existing.getId().equals(currentId)) {
                 throw new DuplicateResourceException("Holiday already exists for date and title");
             }

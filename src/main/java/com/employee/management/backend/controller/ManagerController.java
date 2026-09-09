@@ -139,7 +139,10 @@ public class ManagerController {
             if (existing.getEmpId() == null || !teamIds.contains(existing.getEmpId())) {
                 return ResponseEntity.status(403).body(Map.of("error", "That request doesn't belong to your team"));
             }
-            LeaveRequestDTO updated = leaveRequestService.updateLeaveRequestStatus(requestId, statusDTO);
+            // No clientId check here - team membership (teamIds.contains above) already proves
+            // this request belongs to the manager's own tenant, since Team Structure (Project)
+            // membership is itself now client-scoped.
+            LeaveRequestDTO updated = leaveRequestService.updateLeaveRequestStatus(requestId, statusDTO, null);
             return ResponseEntity.ok(updated);
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));

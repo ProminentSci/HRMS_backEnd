@@ -79,7 +79,7 @@ public class LeaveRequestService {
             throw new RuntimeException("Invalid date range");
         }
 
-        int workingDays = calculateWorkingDays(fromDate, toDate);
+        int workingDays = calculateWorkingDays(fromDate, toDate, employee.getClient() == null ? null : employee.getClient().getId());
 
         boolean hasOverlappingRequest = leaveRequestRepository.findByEmployeeEmpIdOrderByCreatedAtDesc(requestDTO.getEmpId())
                 .stream()
@@ -165,10 +165,13 @@ public class LeaveRequestService {
         throw new RuntimeException("Invalid status: " + status);
     }
 
-    private int calculateWorkingDays(LocalDate start, LocalDate end) {
+    private int calculateWorkingDays(LocalDate start, LocalDate end, Long clientId) {
         if (start.isAfter(end)) return 0;
-        // fetch holidays in range
-        List<com.employee.management.backend.Entity.Holiday> holidays = holidayRepository.findByDateBetweenOrderByDateAsc(start, end);
+        // fetch holidays in range, scoped to the leave request's own employee's client - never
+        // the caller's client, since an admin approving a request acts on someone else's company.
+        List<com.employee.management.backend.Entity.Holiday> holidays = clientId == null
+                ? List.of()
+                : holidayRepository.findByClientIdAndDateBetweenOrderByDateAsc(clientId, start, end);
         java.util.Set<LocalDate> holidayDates = holidays.stream().map(com.employee.management.backend.Entity.Holiday::getDate).collect(java.util.stream.Collectors.toSet());
 
         int workingDays = 0;
@@ -183,19 +186,24 @@ public class LeaveRequestService {
         return workingDays;
     }
 
-    public List<LeaveRequestDTO> getAllLeaveRequests() {
-        List<LeaveRequest> requests = leaveRequestRepository.findAllByOrderByCreatedAtDesc();
+    public List<LeaveRequestDTO> getAllLeaveRequests(Long clientId) {
+        List<LeaveRequest> requests = leaveRequestRepository.findAllByEmployeeClientIdOrderByCreatedAtDesc(clientId);
         return requests.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    public Page<LeaveRequestDTO> getLeaveRequestsPage(String status, Long searchId, String searchName,
+    public Page<LeaveRequestDTO> getLeaveRequestsPage(Long clientId, String status, Long searchId, String searchName,
                                                        Integer year, Integer month, Pageable pageable) {
         Page<LeaveRequest> requests = leaveRequestRepository.filterLeaveRequests(
-                status, searchId, searchName, year, month, pageable);
+                clientId, status, searchId, searchName, year, month, pageable);
         return requests.map(this::convertToDTO);
     }
 
-    public List<LeaveRequestDTO> getLeaveRequestsByEmployeeId(Long empId) {
+    public List<LeaveRequestDTO> getLeaveRequestsByEmployeeId(Long empId, Long clientId) {
+        Employee employee = employeeRepository.findById(empId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee", "empId", empId));
+        if (employee.getClient() == null || !employee.getClient().getId().equals(clientId)) {
+            throw new ResourceNotFoundException("Employee", "empId", empId);
+        }
         List<LeaveRequest> requests = leaveRequestRepository.findByEmployeeEmpIdOrderByCreatedAtDesc(empId);
         return requests.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
@@ -208,9 +216,12 @@ public class LeaveRequestService {
         return requests.stream().map(this::convertToDTO).collect(Collectors.toList());
     }
 
-    public LeaveRequestDTO updateLeaveRequestStatus(Long requestId, UpdateLeaveRequestStatusDTO statusDTO) {
+    public LeaveRequestDTO updateLeaveRequestStatus(Long requestId, UpdateLeaveRequestStatusDTO statusDTO, Long clientId) {
         LeaveRequest leaveRequest = leaveRequestRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("LeaveRequest", "id", requestId));
+        if (clientId != null && !ownedByClient(leaveRequest, clientId)) {
+            throw new ResourceNotFoundException("LeaveRequest", "id", requestId);
+        }
 
         String oldStatus = leaveRequest.getStatus();
 
@@ -218,7 +229,10 @@ public class LeaveRequestService {
         Integer originalDays = leaveRequest.getDays();
 
         // compute working days from dates (exclude weekends and holidays)
-        int workingDaysFromDates = calculateWorkingDays(leaveRequest.getFromDate(), leaveRequest.getToDate());
+        Employee requestEmployee = leaveRequest.getEmployee();
+        Long requestClientId = requestEmployee != null && requestEmployee.getClient() != null
+                ? requestEmployee.getClient().getId() : null;
+        int workingDaysFromDates = calculateWorkingDays(leaveRequest.getFromDate(), leaveRequest.getToDate(), requestClientId);
 
         // Prefer the days already stored on the leave request (created working days).
         // If missing, fall back to computed working days. Ignore any incorrect `days` value sent in DTO.
@@ -322,23 +336,40 @@ public class LeaveRequestService {
                 + "<p>If you have any questions, please contact HR.</p>";
     }
 
+    // requestId here is caller-owned (ManagerController re-checks its own team membership before
+    // calling this) except via LeaveRequestController.getLeaveRequestById, which passes clientId.
     public LeaveRequestDTO getLeaveRequestById(Long requestId) {
+        return getLeaveRequestById(requestId, null);
+    }
+
+    public LeaveRequestDTO getLeaveRequestById(Long requestId, Long clientId) {
         LeaveRequest leaveRequest = leaveRequestRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("LeaveRequest", "id", requestId));
+        if (clientId != null && !ownedByClient(leaveRequest, clientId)) {
+            throw new ResourceNotFoundException("LeaveRequest", "id", requestId);
+        }
         return convertToDTO(leaveRequest);
     }
 
-    public List<LeaveRequestDTO> getLeaveRequestsByStatus(String status) {
-        return leaveRequestRepository.findAllByOrderByCreatedAtDesc()
+    private boolean ownedByClient(LeaveRequest leaveRequest, Long clientId) {
+        Employee employee = leaveRequest.getEmployee();
+        return employee != null && employee.getClient() != null && employee.getClient().getId().equals(clientId);
+    }
+
+    public List<LeaveRequestDTO> getLeaveRequestsByStatus(String status, Long clientId) {
+        return leaveRequestRepository.findAllByEmployeeClientIdOrderByCreatedAtDesc(clientId)
                 .stream()
                 .filter(req -> req.getStatus().equals(status))
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    public com.employee.management.backend.dto.LeaveReportDTO getLeaveReport(Long empId) {
+    public com.employee.management.backend.dto.LeaveReportDTO getLeaveReport(Long empId, Long clientId) {
         Employee employee = employeeRepository.findById(empId)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee", "empId", empId));
+        if (employee.getClient() == null || !employee.getClient().getId().equals(clientId)) {
+            throw new ResourceNotFoundException("Employee", "empId", empId);
+        }
 
         com.employee.management.backend.dto.LeaveReportDTO report = new com.employee.management.backend.dto.LeaveReportDTO(
                 employee.getEmpId(),

@@ -11,4 +11,6 @@ public interface WeeklyReportRepository extends JpaRepository<WeeklyReport, Long
     List<WeeklyReport> findByManagerEmpIdOrderByWeekStartDateDesc(Long managerEmpId);
 
     List<WeeklyReport> findAllByOrderByWeekStartDateDesc();
+
+    List<WeeklyReport> findByManagerClientIdOrderByWeekStartDateDesc(Long clientId);
 }

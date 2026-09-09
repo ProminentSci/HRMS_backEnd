@@ -16,6 +16,8 @@ public interface TimesheetRepository extends JpaRepository<Timesheet, Long> {
 
     List<Timesheet> findBySubmittedToOrderByWorkDateDesc(String submittedTo);
 
+    List<Timesheet> findBySubmittedToAndEmployeeClientIdOrderByWorkDateDesc(String submittedTo, Long clientId);
+
     // Entries eligible for this week's PM -> HR rollup: this manager's team, dated within the
     // week, not already swept into an earlier weekly report.
     List<Timesheet> findByEmployeeEmpIdInAndWorkDateBetweenAndWeeklyReportIsNullOrderByWorkDateAsc(

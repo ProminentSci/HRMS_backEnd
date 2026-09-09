@@ -12,15 +12,21 @@ import java.util.Optional;
 
 @Repository
 public interface HolidayRepository extends JpaRepository<Holiday, Long> {
-    Optional<Holiday> findByDateAndTitle(LocalDate date, String title);
+    Optional<Holiday> findByDateAndTitleAndClientId(LocalDate date, String title, Long clientId);
 
-    @Query("SELECT h FROM Holiday h WHERE FUNCTION('YEAR', h.date) = :year ORDER BY h.date ASC")
-    List<Holiday> findByYear(@Param("year") Integer year);
+    Optional<Holiday> findByIdAndClientId(Long id, Long clientId);
 
-    @Query("SELECT DISTINCT FUNCTION('YEAR', h.date) FROM Holiday h ORDER BY FUNCTION('YEAR', h.date) DESC")
-    List<Integer> findDistinctYears();
+    @Query("SELECT h FROM Holiday h WHERE h.clientId = :clientId AND FUNCTION('YEAR', h.date) = :year ORDER BY h.date ASC")
+    List<Holiday> findByYearAndClientId(@Param("year") Integer year, @Param("clientId") Long clientId);
 
+    @Query("SELECT DISTINCT FUNCTION('YEAR', h.date) FROM Holiday h WHERE h.clientId = :clientId ORDER BY FUNCTION('YEAR', h.date) DESC")
+    List<Integer> findDistinctYearsByClientId(@Param("clientId") Long clientId);
+
+    List<Holiday> findByClientIdAndDateBetweenOrderByDateAsc(Long clientId, LocalDate start, LocalDate end);
+
+    List<Holiday> findAllByClientIdOrderByDateAsc(Long clientId);
+
+    // Unscoped - kept only for AttendanceController/AttendanceReportController, which are not
+    // yet tenant-scoped themselves (out of scope for this fix; see the multi-tenancy plan).
     List<Holiday> findByDateBetweenOrderByDateAsc(LocalDate start, LocalDate end);
-
-    List<Holiday> findAllByOrderByDateAsc();
 }

@@ -1,9 +1,12 @@
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\service\OtpService.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\config\DemoDataSeeder.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\controller\ReportsController.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\LetterTemplateDTO.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\PayslipSettings.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\LetterTemplateRepository.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\OtpVerification.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\EmergencyContactRepository.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\TemplateField.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\DocumentFile.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\controller\AttendanceReportController.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\service\TicketService.java
@@ -15,6 +18,7 @@ C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\manageme
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\PayslipLineItem.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\SuperAdmin.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\SubmitPerformanceReportDTO.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\TemplateFieldDTO.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\ProjectMembershipRepository.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\PerformanceReportDTO.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\ProjectRepository.java
@@ -63,6 +67,7 @@ C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\manageme
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\PasswordResetTokenRepository.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\TimesheetRepository.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\controller\TimesheetController.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\LetterTemplate.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\controller\ExperienceLetterController.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\ClientRepository.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\service\PasswordResetService.java
@@ -93,8 +98,11 @@ C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\manageme
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\config\LeaveInitializer.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\controller\ProjectController.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\CreateTicketDTO.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\ParsedLetterDocumentDTO.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\exception\GlobalExceptionHandler.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\EducationDetails.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\service\LetterTemplateService.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\controller\LetterTemplateController.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\config\WebConfig.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\PayslipSettingsRepository.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\PasswordResetToken.java

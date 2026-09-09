@@ -4,6 +4,7 @@ import com.employee.management.backend.dto.CreateHolidayDTO;
 import com.employee.management.backend.dto.HolidayDTO;
 import com.employee.management.backend.dto.UpdateHolidayDTO;
 import com.employee.management.backend.security.AuthenticatedUser;
+import com.employee.management.backend.security.SecurityUtils;
 import com.employee.management.backend.service.HolidayService;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -33,17 +34,17 @@ public class HolidayController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
             @RequestParam(required = false) Integer upcomingDays) {
-        return ResponseEntity.ok(holidayService.getHolidays(year, start, end, upcomingDays));
+        return ResponseEntity.ok(holidayService.getHolidays(SecurityUtils.currentClientId(), year, start, end, upcomingDays));
     }
 
     @GetMapping("/years")
     public ResponseEntity<List<Integer>> getYears() {
-        return ResponseEntity.ok(holidayService.getHolidayYears());
+        return ResponseEntity.ok(holidayService.getHolidayYears(SecurityUtils.currentClientId()));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<HolidayDTO> getHoliday(@PathVariable Long id) {
-        return ResponseEntity.ok(holidayService.getHoliday(id));
+        return ResponseEntity.ok(holidayService.getHoliday(id, SecurityUtils.currentClientId()));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -51,7 +52,7 @@ public class HolidayController {
     public ResponseEntity<HolidayDTO> createHoliday(
             Authentication authentication,
             @Valid @RequestBody CreateHolidayDTO request) {
-        HolidayDTO holidayDTO = holidayService.createHoliday(request, currentUserLabel(authentication));
+        HolidayDTO holidayDTO = holidayService.createHoliday(request, currentUserLabel(authentication), SecurityUtils.currentClientId());
         return ResponseEntity.created(URI.create("/api/holidays/" + holidayDTO.getId()))
                 .body(holidayDTO);
     }
@@ -62,13 +63,13 @@ public class HolidayController {
             @PathVariable Long id,
             Authentication authentication,
             @Valid @RequestBody UpdateHolidayDTO request) {
-        return ResponseEntity.ok(holidayService.updateHoliday(id, request, currentUserLabel(authentication)));
+        return ResponseEntity.ok(holidayService.updateHoliday(id, request, currentUserLabel(authentication), SecurityUtils.currentClientId()));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteHoliday(@PathVariable Long id) {
-        holidayService.deleteHoliday(id);
+        holidayService.deleteHoliday(id, SecurityUtils.currentClientId());
         return ResponseEntity.noContent().build();
     }
 

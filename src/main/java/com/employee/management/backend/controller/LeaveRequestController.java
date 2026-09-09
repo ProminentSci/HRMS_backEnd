@@ -4,6 +4,7 @@ import com.employee.management.backend.dto.CreateLeaveRequestDTO;
 import com.employee.management.backend.dto.LeaveReportDTO;
 import com.employee.management.backend.dto.LeaveRequestDTO;
 import com.employee.management.backend.dto.UpdateLeaveRequestStatusDTO;
+import com.employee.management.backend.security.SecurityUtils;
 import com.employee.management.backend.service.LeaveRequestService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -53,36 +54,36 @@ public class LeaveRequestController {
             }
 
             Page<LeaveRequestDTO> result = leaveRequestService.getLeaveRequestsPage(
-                    normalizedStatus, searchId, searchName, year, month,
+                    SecurityUtils.currentClientId(), normalizedStatus, searchId, searchName, year, month,
                     PageRequest.of(normalizedPage, normalizedSize));
             return ResponseEntity.ok(result);
         }
-        List<LeaveRequestDTO> requests = leaveRequestService.getAllLeaveRequests();
+        List<LeaveRequestDTO> requests = leaveRequestService.getAllLeaveRequests(SecurityUtils.currentClientId());
         return ResponseEntity.ok(requests);
     }
 
     @GetMapping("/employee/{empId}")
     public ResponseEntity<List<LeaveRequestDTO>> getLeaveRequestsByEmployeeId(@PathVariable Long empId) {
-        List<LeaveRequestDTO> requests = leaveRequestService.getLeaveRequestsByEmployeeId(empId);
+        List<LeaveRequestDTO> requests = leaveRequestService.getLeaveRequestsByEmployeeId(empId, SecurityUtils.currentClientId());
         return ResponseEntity.ok(requests);
     }
 
     @GetMapping("/{requestId}")
     public ResponseEntity<LeaveRequestDTO> getLeaveRequestById(@PathVariable Long requestId) {
-        LeaveRequestDTO request = leaveRequestService.getLeaveRequestById(requestId);
+        LeaveRequestDTO request = leaveRequestService.getLeaveRequestById(requestId, SecurityUtils.currentClientId());
         return ResponseEntity.ok(request);
     }
 
     @GetMapping("/status/{status}")
     public ResponseEntity<List<LeaveRequestDTO>> getLeaveRequestsByStatus(@PathVariable String status) {
-        List<LeaveRequestDTO> requests = leaveRequestService.getLeaveRequestsByStatus(status);
+        List<LeaveRequestDTO> requests = leaveRequestService.getLeaveRequestsByStatus(status, SecurityUtils.currentClientId());
         return ResponseEntity.ok(requests);
     }
 
     @GetMapping("/report/{empId}")
     public ResponseEntity<?> getLeaveReport(@PathVariable Long empId) {
         try {
-            LeaveReportDTO report = leaveRequestService.getLeaveReport(empId);
+            LeaveReportDTO report = leaveRequestService.getLeaveReport(empId, SecurityUtils.currentClientId());
             return ResponseEntity.ok(report);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
@@ -105,7 +106,7 @@ public class LeaveRequestController {
             @PathVariable Long requestId,
             @RequestBody UpdateLeaveRequestStatusDTO statusDTO) {
         try {
-            LeaveRequestDTO updatedRequest = leaveRequestService.updateLeaveRequestStatus(requestId, statusDTO);
+            LeaveRequestDTO updatedRequest = leaveRequestService.updateLeaveRequestStatus(requestId, statusDTO, SecurityUtils.currentClientId());
             return ResponseEntity.ok(updatedRequest);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));

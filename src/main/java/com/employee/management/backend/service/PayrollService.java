@@ -277,8 +277,9 @@ public class PayrollService {
         double bonus = parseAmount(salaryDetails.getBonus());
         double ctc = parseAmount(salaryDetails.getCtc());
         double monthlyGrossSalary = ctc > 0 ? ctc / 12 : basicSalary + bonus;
-        int unpaidLeaveDays = getApprovedLeaveDays(employee.getEmpId(), payrollMonth, true);
-        int paidLeaveDays = getApprovedLeaveDays(employee.getEmpId(), payrollMonth, false);
+        Long employeeClientId = employee.getClient() == null ? null : employee.getClient().getId();
+        int unpaidLeaveDays = getApprovedLeaveDays(employee.getEmpId(), payrollMonth, true, employeeClientId);
+        int paidLeaveDays = getApprovedLeaveDays(employee.getEmpId(), payrollMonth, false, employeeClientId);
         double dailySalary = monthlyGrossSalary / payrollMonth.lengthOfMonth();
         double leaveDeduction = dailySalary * unpaidLeaveDays;
         // A one-off top-up entered by the admin for this run only - added after the LOP
@@ -376,8 +377,9 @@ public class PayrollService {
             double bonus = parseAmount(salaryDetails.getBonus());
             double ctc = parseAmount(salaryDetails.getCtc());
             double monthlyGrossSalary = ctc > 0 ? ctc / 12 : basicSalary + bonus;
-            int unpaidLeaveDays = getApprovedLeaveDays(employee.getEmpId(), payrollMonth, true);
-            int paidLeaveDays = getApprovedLeaveDays(employee.getEmpId(), payrollMonth, false);
+            Long employeeClientId = employee.getClient() == null ? null : employee.getClient().getId();
+            int unpaidLeaveDays = getApprovedLeaveDays(employee.getEmpId(), payrollMonth, true, employeeClientId);
+            int paidLeaveDays = getApprovedLeaveDays(employee.getEmpId(), payrollMonth, false, employeeClientId);
             double dailySalary = monthlyGrossSalary / payrollMonth.lengthOfMonth();
             double leaveDeduction = dailySalary * unpaidLeaveDays;
 
@@ -410,12 +412,12 @@ public class PayrollService {
         return YearMonth.of(year, month);
     }
 
-    private int getApprovedLeaveDays(Long empId, YearMonth payrollMonth, boolean unpaidOnly) {
+    private int getApprovedLeaveDays(Long empId, YearMonth payrollMonth, boolean unpaidOnly, Long clientId) {
         return leaveRequestRepository.findByEmployeeEmpIdOrderByCreatedAtDesc(empId).stream()
                 .filter(leaveRequest -> "Approved".equalsIgnoreCase(leaveRequest.getStatus()))
                 .filter(leaveRequest -> overlapsPayrollMonth(leaveRequest, payrollMonth))
                 .filter(leaveRequest -> unpaidOnly == isUnpaidLeave(leaveRequest.getLeaveType()))
-                .mapToInt(leaveRequest -> countLeaveDaysInMonth(leaveRequest, payrollMonth))
+                .mapToInt(leaveRequest -> countLeaveDaysInMonth(leaveRequest, payrollMonth, clientId))
                 .sum();
     }
 
@@ -425,22 +427,25 @@ public class PayrollService {
         return !leaveRequest.getToDate().isBefore(monthStart) && !leaveRequest.getFromDate().isAfter(monthEnd);
     }
 
-    private int countLeaveDaysInMonth(LeaveRequest leaveRequest, YearMonth payrollMonth) {
+    private int countLeaveDaysInMonth(LeaveRequest leaveRequest, YearMonth payrollMonth, Long clientId) {
         LocalDate start = leaveRequest.getFromDate().isBefore(payrollMonth.atDay(1))
                 ? payrollMonth.atDay(1)
                 : leaveRequest.getFromDate();
         LocalDate end = leaveRequest.getToDate().isAfter(payrollMonth.atEndOfMonth())
                 ? payrollMonth.atEndOfMonth()
                 : leaveRequest.getToDate();
-        return countWorkingDays(start, end);
+        return countWorkingDays(start, end, clientId);
     }
 
-    private int countWorkingDays(LocalDate start, LocalDate end) {
+    private int countWorkingDays(LocalDate start, LocalDate end, Long clientId) {
         if (start.isAfter(end)) {
             return 0;
         }
 
-        Set<LocalDate> holidayDates = holidayRepository.findByDateBetweenOrderByDateAsc(start, end).stream()
+        List<com.employee.management.backend.Entity.Holiday> holidaysInRange = clientId == null
+                ? List.of()
+                : holidayRepository.findByClientIdAndDateBetweenOrderByDateAsc(clientId, start, end);
+        Set<LocalDate> holidayDates = holidaysInRange.stream()
                 .map(com.employee.management.backend.Entity.Holiday::getDate)
                 .collect(Collectors.toSet());
 

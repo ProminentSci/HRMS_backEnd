@@ -8,6 +8,7 @@ import com.employee.management.backend.repository.ProjectMembershipRepository;
 import com.employee.management.backend.repository.TimesheetRepository;
 import com.employee.management.backend.repository.WeeklyReportRepository;
 import com.employee.management.backend.security.AuthenticatedUser;
+import com.employee.management.backend.security.SecurityUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -84,7 +85,8 @@ public class TimesheetController {
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<?> getHrTimesheets(@RequestParam(required = false) String status) {
-        List<TimesheetDTO> timesheets = timesheetRepository.findBySubmittedToOrderByWorkDateDesc("HR").stream()
+        List<TimesheetDTO> timesheets = timesheetRepository
+                .findBySubmittedToAndEmployeeClientIdOrderByWorkDateDesc("HR", SecurityUtils.currentClientId()).stream()
                 .filter(t -> status == null || status.isBlank() || "all".equalsIgnoreCase(status)
                         || status.equalsIgnoreCase(t.getStatus()))
                 .map(this::toDTO)
@@ -96,7 +98,8 @@ public class TimesheetController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<?> updateTimesheetStatusAsAdmin(@PathVariable Long id, @RequestBody StatusRequest request) {
         Timesheet timesheet = timesheetRepository.findById(id).orElse(null);
-        if (timesheet == null) {
+        if (timesheet == null || timesheet.getEmployee() == null || timesheet.getEmployee().getClient() == null
+                || !timesheet.getEmployee().getClient().getId().equals(SecurityUtils.currentClientId())) {
             return ResponseEntity.notFound().build();
         }
         if (request.status == null || request.status.isBlank()) {
@@ -112,7 +115,8 @@ public class TimesheetController {
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/weekly-reports")
     public ResponseEntity<?> getWeeklyReportsForHr() {
-        List<ManagerController.WeeklyReportDTO> reports = weeklyReportRepository.findAllByOrderByWeekStartDateDesc().stream()
+        List<ManagerController.WeeklyReportDTO> reports = weeklyReportRepository
+                .findByManagerClientIdOrderByWeekStartDateDesc(SecurityUtils.currentClientId()).stream()
                 .map(report -> toWeeklyReportDTO(report,
                         timesheetRepository.findByWeeklyReportIdOrderByWorkDateAsc(report.getId())))
                 .toList();

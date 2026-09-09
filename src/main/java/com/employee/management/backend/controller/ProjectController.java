@@ -8,6 +8,8 @@ import com.employee.management.backend.Entity.ProjectMembership;
 import com.employee.management.backend.repository.EmployeeRepository;
 import com.employee.management.backend.repository.ProjectMembershipRepository;
 import com.employee.management.backend.repository.ProjectRepository;
+import com.employee.management.backend.security.SecurityUtils;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -42,14 +44,14 @@ public class ProjectController {
 
     @GetMapping
     public List<ProjectSummaryDTO> getAllProjects() {
-        return projectRepository.findAllByOrderByNameAsc().stream()
+        return projectRepository.findAllByClientIdOrderByNameAsc(SecurityUtils.currentClientId()).stream()
                 .map(project -> toSummaryDTO(project, membershipRepository.findByProjectId(project.getId()).size()))
                 .toList();
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getProject(@PathVariable Long id) {
-        Project project = projectRepository.findById(id).orElse(null);
+        Project project = projectRepository.findByIdAndClientId(id, SecurityUtils.currentClientId()).orElse(null);
         if (project == null) {
             return ResponseEntity.notFound().build();
         }
@@ -71,8 +73,10 @@ public class ProjectController {
         if (request.name == null || request.name.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "Project name is required"));
         }
+        Long clientId = SecurityUtils.currentClientId();
 
         Project project = new Project();
+        project.setClientId(clientId);
         project.setName(request.name.trim());
         project.setDescription(request.description);
         project.setStatus(request.status == null || request.status.isBlank() ? "Active" : request.status);
@@ -81,7 +85,7 @@ public class ProjectController {
 
         if (request.projectManagerId != null) {
             Employee pm = employeeRepository.findById(request.projectManagerId).orElse(null);
-            if (pm == null) {
+            if (pm == null || pm.getClient() == null || !pm.getClient().getId().equals(clientId)) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Project manager not found"));
             }
             project.setProjectManager(pm);
@@ -94,7 +98,8 @@ public class ProjectController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateProject(@PathVariable Long id, @RequestBody ProjectRequest request) {
-        Project project = projectRepository.findById(id).orElse(null);
+        Long clientId = SecurityUtils.currentClientId();
+        Project project = projectRepository.findByIdAndClientId(id, clientId).orElse(null);
         if (project == null) {
             return ResponseEntity.notFound().build();
         }
@@ -111,7 +116,7 @@ public class ProjectController {
 
         if (request.projectManagerId != null) {
             Employee pm = employeeRepository.findById(request.projectManagerId).orElse(null);
-            if (pm == null) {
+            if (pm == null || pm.getClient() == null || !pm.getClient().getId().equals(clientId)) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Project manager not found"));
             }
             project.setProjectManager(pm);
@@ -129,7 +134,7 @@ public class ProjectController {
     // on a "just mark this Completed" action. This only ever touches status.
     @PatchMapping("/{id}/status")
     public ResponseEntity<?> updateProjectStatus(@PathVariable Long id, @RequestBody StatusRequest request) {
-        Project project = projectRepository.findById(id).orElse(null);
+        Project project = projectRepository.findByIdAndClientId(id, SecurityUtils.currentClientId()).orElse(null);
         if (project == null) {
             return ResponseEntity.notFound().build();
         }
@@ -268,7 +273,7 @@ public class ProjectController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteProject(@PathVariable Long id) {
-        if (!projectRepository.existsById(id)) {
+        if (projectRepository.findByIdAndClientId(id, SecurityUtils.currentClientId()).isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         projectRepository.deleteById(id);
@@ -277,7 +282,8 @@ public class ProjectController {
 
     @PostMapping("/{id}/members")
     public ResponseEntity<?> addMember(@PathVariable Long id, @RequestBody MemberRequest request) {
-        Project project = projectRepository.findById(id).orElse(null);
+        Long clientId = SecurityUtils.currentClientId();
+        Project project = projectRepository.findByIdAndClientId(id, clientId).orElse(null);
         if (project == null) {
             return ResponseEntity.notFound().build();
         }
@@ -286,7 +292,7 @@ public class ProjectController {
         }
 
         Employee employee = employeeRepository.findById(request.employeeId).orElse(null);
-        if (employee == null) {
+        if (employee == null || employee.getClient() == null || !employee.getClient().getId().equals(clientId)) {
             return ResponseEntity.badRequest().body(Map.of("error", "Employee not found"));
         }
 
@@ -318,6 +324,10 @@ public class ProjectController {
     @PutMapping("/{id}/members/{membershipId}")
     public ResponseEntity<?> updateMember(@PathVariable Long id, @PathVariable Long membershipId,
                                            @RequestBody MemberRequest request) {
+        Long clientId = SecurityUtils.currentClientId();
+        if (projectRepository.findByIdAndClientId(id, clientId).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
         ProjectMembership membership = membershipRepository.findById(membershipId).orElse(null);
         if (membership == null || !membership.getProject().getId().equals(id)) {
             return ResponseEntity.notFound().build();
@@ -334,6 +344,9 @@ public class ProjectController {
 
     @DeleteMapping("/{id}/members/{membershipId}")
     public ResponseEntity<?> removeMember(@PathVariable Long id, @PathVariable Long membershipId) {
+        if (projectRepository.findByIdAndClientId(id, SecurityUtils.currentClientId()).isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
         ProjectMembership membership = membershipRepository.findById(membershipId).orElse(null);
         if (membership == null || !membership.getProject().getId().equals(id)) {
             return ResponseEntity.notFound().build();
@@ -355,7 +368,8 @@ public class ProjectController {
 
     @GetMapping("/hierarchy")
     public OrgHierarchyDTO getOrgHierarchy() {
-        List<Project> projects = projectRepository.findAllByOrderByNameAsc();
+        Long clientId = SecurityUtils.currentClientId();
+        List<Project> projects = projectRepository.findAllByClientIdOrderByNameAsc(clientId);
 
         List<ProjectHierarchyDTO> projectDTOs = projects.stream().map(project -> {
             List<ProjectMembership> memberships = membershipRepository.findByProjectId(project.getId());
@@ -406,7 +420,7 @@ public class ProjectController {
 
         OrgHierarchyDTO response = new OrgHierarchyDTO();
         response.projects = projectDTOs;
-        response.bench = membershipRepository.findEmployeesNotOnAnyProject().stream()
+        response.bench = membershipRepository.findEmployeesNotOnAnyProject(clientId).stream()
                 .map(this::toEmployeeSummary)
                 .sorted(Comparator.comparing(e -> e.name == null ? "" : e.name))
                 .toList();
@@ -415,7 +429,7 @@ public class ProjectController {
 
     @GetMapping("/eligible-managers")
     public List<EmployeeSummaryDTO> getEligibleManagers() {
-        return employeeRepository.findAll().stream()
+        return employeeRepository.findByClientId(SecurityUtils.currentClientId(), Pageable.unpaged()).stream()
                 .filter(emp -> emp.getJobDetails() != null
                         && "PROJECT_MANAGER".equalsIgnoreCase(emp.getJobDetails().getPositionLevel()))
                 .map(this::toEmployeeSummary)
@@ -425,7 +439,7 @@ public class ProjectController {
 
     @GetMapping("/eligible-team-leads")
     public List<EmployeeSummaryDTO> getEligibleTeamLeads() {
-        return employeeRepository.findAll().stream()
+        return employeeRepository.findByClientId(SecurityUtils.currentClientId(), Pageable.unpaged()).stream()
                 .filter(emp -> emp.getJobDetails() != null
                         && "TEAM_LEAD".equalsIgnoreCase(emp.getJobDetails().getPositionLevel()))
                 .map(this::toEmployeeSummary)

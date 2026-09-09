@@ -11,6 +11,10 @@ import java.util.Optional;
 public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findAllByOrderByNameAsc();
 
+    List<Project> findAllByClientIdOrderByNameAsc(Long clientId);
+
+    Optional<Project> findByIdAndClientId(Long id, Long clientId);
+
     List<Project> findByProjectManagerEmpId(Long empId);
 
     Optional<Project> findByName(String name);
