@@ -27,19 +27,19 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 @Transactional
 public class EmployeeServiceImpl implements EmployeeService {
-    // Kept in sync with LeaveInitializer's startup defaults.
-    private static final String[] DEFAULT_LEAVE_TYPES = {"Casual", "Sick", "Paid"};
-    private static final int[] DEFAULT_LEAVE_ALLOCATIONS = {12, 8, 20};
 
     private final EmployeeRepository employeeRepository;
     private final LeaveBalanceRepository leaveBalanceRepository;
     private final DocumentDetailsRepository documentDetailsRepository;
+    private final LeavePolicySettingsService leavePolicySettingsService;
 
     public EmployeeServiceImpl(EmployeeRepository employeeRepository, LeaveBalanceRepository leaveBalanceRepository,
-                                DocumentDetailsRepository documentDetailsRepository) {
+                                DocumentDetailsRepository documentDetailsRepository,
+                                LeavePolicySettingsService leavePolicySettingsService) {
         this.employeeRepository = employeeRepository;
         this.leaveBalanceRepository = leaveBalanceRepository;
         this.documentDetailsRepository = documentDetailsRepository;
+        this.leavePolicySettingsService = leavePolicySettingsService;
     }
 
     @Override
@@ -174,11 +174,15 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     private void seedDefaultLeaveBalances(Employee employee) {
-        for (int i = 0; i < DEFAULT_LEAVE_TYPES.length; i++) {
+        Long clientId = employee.getClient() != null ? employee.getClient().getId() : null;
+        String[] leaveTypes = LeavePolicySettingsService.LEAVE_TYPES;
+        int[] leaveAllocations = leavePolicySettingsService.getAllocations(clientId);
+
+        for (int i = 0; i < leaveTypes.length; i++) {
             LeaveBalance leaveBalance = new LeaveBalance();
             leaveBalance.setEmployee(employee);
-            leaveBalance.setLeaveType(DEFAULT_LEAVE_TYPES[i]);
-            leaveBalance.setBalance(DEFAULT_LEAVE_ALLOCATIONS[i]);
+            leaveBalance.setLeaveType(leaveTypes[i]);
+            leaveBalance.setBalance(leaveAllocations[i]);
             leaveBalanceRepository.save(leaveBalance);
         }
     }

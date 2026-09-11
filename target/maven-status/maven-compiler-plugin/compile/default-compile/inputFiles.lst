@@ -8,7 +8,9 @@ C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\manageme
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\EmergencyContactRepository.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\TemplateField.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\DocumentFile.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\service\LeavePolicySettingsService.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\controller\AttendanceReportController.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\controller\LeavePolicySettingsController.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\service\TicketService.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\UpdateLeaveRequestStatusDTO.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\SalaryDetails.java
@@ -38,6 +40,7 @@ C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\manageme
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\service\LeaveBalanceService.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\controller\PerformanceReportController.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\controller\HolidayController.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\LeavePolicySettingsRepository.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\config\DefaultClientSeeder.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\PerformanceReport.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\AddressDetails.java
@@ -74,6 +77,7 @@ C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\manageme
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\JobDetails.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\security\AuthenticatedUser.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\service\EmployeeLetterService.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\LeavePolicySettingsDTO.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\service\LeaveRequestService.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\Payroll.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\exception\DuplicateResourceException.java
@@ -90,6 +94,7 @@ C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\manageme
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\dto\UpdateHolidayDTO.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\Employee.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\LeaveBalance.java
+C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\Entity\LeavePolicySettings.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\service\EmployeeService.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\security\SecurityUtils.java
 C:\Users\user\Documents\project\HRMS_backEnd\src\main\java\com\employee\management\backend\repository\LeaveBalanceRepository.java
