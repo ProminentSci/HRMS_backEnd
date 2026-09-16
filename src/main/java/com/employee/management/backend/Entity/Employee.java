@@ -7,12 +7,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "employees")
+@Table(name = "employees", uniqueConstraints = {
+        // Admin-assigned employee code is unique per tenant only - two different clients may
+        // reuse the same code, since it identifies an employee within one company's own scheme,
+        // not platform-wide. Nullable so legacy rows (created before this field existed) don't
+        // collide on NULL - MySQL treats each NULL as distinct under a unique index.
+        @UniqueConstraint(name = "uk_employee_client_employee_id", columnNames = {"client_id", "employee_id"})
+})
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Employee {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long empId;
+
+    @Column(name = "employee_id", length = 50)
+    private String employeeId;
 
     private String firstName;
     private String lastName;
@@ -82,6 +91,14 @@ public class Employee {
 
     public void setEmpId(Long empId) {
         this.empId = empId;
+    }
+
+    public String getEmployeeId() {
+        return employeeId;
+    }
+
+    public void setEmployeeId(String employeeId) {
+        this.employeeId = employeeId;
     }
 
     public String getFirstName() {

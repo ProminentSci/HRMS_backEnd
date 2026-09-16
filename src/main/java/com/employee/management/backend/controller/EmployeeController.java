@@ -139,6 +139,10 @@ public class EmployeeController {
         if (client == null) {
             return ResponseEntity.badRequest().body(new ApiResponse(false, "Your account isn't linked to a client"));
         }
+        if (employee.getEmployeeId() == null || employee.getEmployeeId().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(new ApiResponse(false, "Employee ID is required"));
+        }
+        employee.setEmployeeId(employee.getEmployeeId().trim());
 
         if (employee.getRole() == null || employee.getRole().trim().isEmpty()) {
             employee.setRole("employee");

@@ -9,6 +9,7 @@ import com.employee.management.backend.Entity.JobDetails;
 import com.employee.management.backend.Entity.LeaveBalance;
 import com.employee.management.backend.Entity.ProjectHistory;
 import com.employee.management.backend.Entity.SalaryDetails;
+import com.employee.management.backend.exception.DuplicateResourceException;
 import com.employee.management.backend.exception.ResourceNotFoundException;
 import com.employee.management.backend.repository.DocumentDetailsRepository;
 import com.employee.management.backend.repository.EmployeeRepository;
@@ -163,6 +164,8 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public Employee createEmployee(Employee employee) {
+        Long clientId = employee.getClient() != null ? employee.getClient().getId() : null;
+        ensureUniqueEmployeeId(clientId, employee.getEmployeeId(), null);
         linkChildEntities(employee);
         syncProjectHistoryWithWorkStatus(employee, null, null);
         Employee saved = employeeRepository.save(employee);
@@ -171,6 +174,22 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
         seedDefaultLeaveBalances(saved);
         return saved;
+    }
+
+    // Employee ID uniqueness is scoped to (clientId, employeeId) - the same code is allowed to
+    // repeat across different clients, since it identifies an employee within one company's own
+    // numbering scheme, not platform-wide. A blank/absent employeeId is never checked - not every
+    // employee needs one, and multiple NULLs coexist fine under the DB's unique index too.
+    private void ensureUniqueEmployeeId(Long clientId, String employeeId, Long currentEmpId) {
+        if (clientId == null || employeeId == null || employeeId.trim().isEmpty()) {
+            return;
+        }
+        employeeRepository.findByClientIdAndEmployeeId(clientId, employeeId.trim())
+                .filter(existing -> currentEmpId == null || !existing.getEmpId().equals(currentEmpId))
+                .ifPresent(existing -> {
+                    throw new DuplicateResourceException(
+                            "Employee ID \"" + employeeId.trim() + "\" is already used by another employee in your organization");
+                });
     }
 
     private void seedDefaultLeaveBalances(Employee employee) {
@@ -190,6 +209,8 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public Employee updateEmployee(Long empId, Employee employee) {
         Employee existing = findById(empId);
+        Long clientId = existing.getClient() != null ? existing.getClient().getId() : null;
+        ensureUniqueEmployeeId(clientId, employee.getEmployeeId(), empId);
         applyUpdates(existing, employee);
         linkChildEntities(existing);
         Employee saved = employeeRepository.save(existing);
@@ -344,6 +365,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     private void applyUpdates(Employee existing, Employee incoming) {
+        existing.setEmployeeId(incoming.getEmployeeId());
         existing.setFirstName(incoming.getFirstName());
         existing.setLastName(incoming.getLastName());
         existing.setEmail(incoming.getEmail());
