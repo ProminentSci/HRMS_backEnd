@@ -28,19 +28,21 @@ public class ReportsController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String department,
-            @RequestParam(required = false) String status) {
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String employeeType) {
         int normalizedPage = Math.max(page, 0);
         int normalizedSize = Math.max(size, 1);
         String normalizedSearch = (search == null || search.trim().isEmpty()) ? null : search.trim();
         String normalizedDepartment = normalizeFilterValue(department);
         String normalizedStatus = normalizeFilterValue(status);
+        String normalizedEmployeeType = normalizeFilterValue(employeeType);
 
         Page<Employee> employees = employeeService.searchEmployees(
                 SecurityUtils.currentClientId(),
                 normalizedSearch,
                 normalizedDepartment,
                 normalizedStatus,
-                null,
+                normalizedEmployeeType,
                 PageRequest.of(normalizedPage, normalizedSize)
         );
 

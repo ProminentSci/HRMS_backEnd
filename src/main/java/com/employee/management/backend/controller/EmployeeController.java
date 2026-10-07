@@ -60,7 +60,7 @@ public class EmployeeController {
         String normalizedJoinedFrom = normalizeFilterValue(joinedFrom);
         String normalizedJoinedTo = normalizeFilterValue(joinedTo);
         Long clientId = SecurityUtils.currentClientId();
-        if (normalizedSearch != null) {
+        if (normalizedSearch != null || normalizedEmployeeType != null) {
             return employeeService.searchEmployees(
                     clientId,
                     normalizedSearch,

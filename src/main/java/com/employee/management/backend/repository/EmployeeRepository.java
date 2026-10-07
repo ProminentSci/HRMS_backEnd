@@ -83,4 +83,18 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
     @Query("SELECT COUNT(e) FROM Employee e LEFT JOIN e.jobDetails jd WHERE e.client.id = :clientId AND TRIM(LOWER(COALESCE(jd.employeeStatus, ''))) <> 'inactive'")
     long countActive(@Param("clientId") Long clientId);
+
+    // Every active employee (across all clients) who has a date of birth on file - the daily
+    // birthday job matches the month/day in Java since dateOfBirth is stored as a string.
+    @Query("SELECT e FROM Employee e LEFT JOIN FETCH e.client LEFT JOIN e.jobDetails jd " +
+           "WHERE e.dateOfBirth IS NOT NULL AND TRIM(e.dateOfBirth) <> '' " +
+           "AND TRIM(LOWER(COALESCE(jd.employeeStatus, ''))) <> 'inactive'")
+    List<Employee> findActiveWithDateOfBirth();
+
+    // Same as above, limited to one client - for the dashboard's "birthdays today" card.
+    @Query("SELECT e FROM Employee e LEFT JOIN FETCH e.client LEFT JOIN FETCH e.jobDetails jd " +
+           "WHERE e.client.id = :clientId " +
+           "AND e.dateOfBirth IS NOT NULL AND TRIM(e.dateOfBirth) <> '' " +
+           "AND TRIM(LOWER(COALESCE(jd.employeeStatus, ''))) <> 'inactive'")
+    List<Employee> findActiveWithDateOfBirthForClient(@Param("clientId") Long clientId);
 }
